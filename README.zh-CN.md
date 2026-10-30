@@ -3,8 +3,11 @@
 基于 Qt 6 的 `rsync` 图形前端，用于复制、移动文件，并在复制后按校验和验证结果。
 本仓库是 **简体中文版**：程序界面、菜单、按钮、提示、日志和 Dolphin 右键菜单均已翻译。
 
-> 原项目：<https://github.com/fapped/rsync-gui>
-![中文界面](docs/screenshots/rsync-gui-zh.png)
+> **原版项目（上游）**：<https://github.com/fapped/rsync-gui>
+>
+> 本仓库是它的简体中文分支。
+>
+> ![中文界面](docs/screenshots/rsync-gui-zh.png)
 
 > 本中文版在源码中加入了 `translations/rsync-gui_zh_CN.ts` 和编译好的
 > `translations/rsync-gui_zh_CN.qm`，并在启动时自动加载。

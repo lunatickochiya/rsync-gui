@@ -1,5 +1,7 @@
 # Rsync GUI
 
+> **原版项目 / Original project：** <https://github.com/fapped/rsync-gui>
+>
 > 简体中文版说明与安装方法：[README.zh-CN.md](README.zh-CN.md)
 
 > **Created with AI.** The source code, tests and documentation of this project were written by an
