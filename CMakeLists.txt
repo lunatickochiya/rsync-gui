@@ -34,6 +34,15 @@ qt_add_executable(rsync-gui
 )
 target_link_libraries(rsync-gui PRIVATE rsynccore Qt6::Widgets Qt6::DBus Qt6::Concurrent)
 
+# Simplified Chinese UI. The .qm is committed so a normal build does not need
+# Qt Linguist; after changing the .ts, regenerate it with:
+#   lrelease translations/rsync-gui_zh_CN.ts -qm translations/rsync-gui_zh_CN.qm
+qt_add_resources(rsync-gui "translations"
+    PREFIX "/i18n"
+    BASE "translations"
+    FILES translations/rsync-gui_zh_CN.qm
+)
+
 option(RSYNC_GUI_INSTALL_SERVICEMENUS "Install the Dolphin (KDE) context menu entries" ON)
 
 # Presets shipped with the application. They are also copied next to the executable in the build

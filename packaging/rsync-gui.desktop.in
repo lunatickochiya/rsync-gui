@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Rsync GUI
-Comment=Copy files and directories with rsync, optionally verifying the copy
+Name=Rsync GUI 中文版
+Comment=使用 rsync 复制文件和目录，可选择校验复制结果
 Exec=@RSYNC_GUI_EXECUTABLE@ %U
 Icon=folder-sync
 Terminal=false

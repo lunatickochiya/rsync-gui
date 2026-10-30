@@ -219,6 +219,8 @@ private slots:
     void arguments_data();
     void arguments();
     void verifyArguments();
+    void excludeFileArguments();
+    void excludeFileValidation();
     void remoteShell();
     void splitArgs_data();
     void splitArgs();
@@ -408,6 +410,27 @@ void TestRsyncCore::verifyArguments()
     o.verifyAfter = false;
     QVERIFY(!o.verifiedMove());
     QVERIFY(o.arguments().contains(QStringLiteral("--remove-source-files")));
+}
+
+void TestRsyncCore::excludeFileArguments()
+{
+    RsyncOptions o;
+    o.excludeFile = QStringLiteral("/tmp/my excludes.txt");
+    QCOMPARE(o.arguments(), (QStringList{"-avhP", "--exclude-from=/tmp/my excludes.txt"}));
+    QCOMPARE(o.verifyArguments(),
+             (QStringList{"-nrlci", "--out-format=%i %n%L", "--exclude-from=/tmp/my excludes.txt"}));
+    o.excludeFile.clear();
+    QCOMPARE(o.arguments(), (QStringList{"-avhP"}));
+}
+
+void TestRsyncCore::excludeFileValidation()
+{
+    RsyncOptions o;
+    QVERIFY(o.validate().isEmpty());
+    o.excludeFile = QStringLiteral("/definitely/not/here/excludes.txt");
+    QVERIFY(!o.validate().isEmpty());
+    o.excludeFile = QStringLiteral("/etc/hostname");
+    QVERIFY(o.validate().isEmpty());
 }
 
 void TestRsyncCore::remoteShell()
@@ -1211,6 +1234,7 @@ void TestRsyncCore::jsonRoundTrip()
     o.bwLimit = "10M";
     o.useRemoteShell = true;
     o.remoteShell = "ssh -i key";
+    o.excludeFile = "/tmp/excludes.txt";
     o.extraArguments = "--exclude='*.tmp'";
     o.autoModifyWindow = false;
 

@@ -1,7 +1,7 @@
 {
     "format": "rsync-gui-settings",
     "version": 1,
-    "name": "Move to FAT/NTFS/NAS",
+    "name": "移动到 FAT/NTFS/NAS",
     "options": {
         "archive": false,
         "recursive": true,

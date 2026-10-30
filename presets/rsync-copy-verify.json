@@ -1,7 +1,7 @@
 {
     "format": "rsync-gui-settings",
     "version": 1,
-    "name": "Copy and verify",
+    "name": "复制并校验",
     "options": {
         "archive": true,
         "recursive": true,

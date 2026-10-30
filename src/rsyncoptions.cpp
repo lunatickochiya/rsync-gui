@@ -89,6 +89,7 @@ constexpr StringOption kStringOptions[] = {
     {"program", &RsyncOptions::program},
     {"bwLimit", &RsyncOptions::bwLimit},
     {"remoteShell", &RsyncOptions::remoteShell},
+    {"excludeFile", &RsyncOptions::excludeFile},
     {"extraArguments", &RsyncOptions::extraArguments},
 };
 
@@ -206,6 +207,8 @@ QStringList RsyncOptions::buildArguments(int port, bool removeSources) const
         longOptions << QStringLiteral("--remove-source-files");
     if (useBwLimit)
         longOptions << QStringLiteral("--bwlimit=") + bwLimit.trimmed();
+    if (!excludeFile.isEmpty())
+        longOptions << QStringLiteral("--exclude-from=") + excludeFile;
     const QStringList extra = extraArgumentList();
     if (modifyWindow > 0 && (archive || times)
         && std::none_of(extra.cbegin(), extra.cend(), [](const QString &arg) {
@@ -231,8 +234,11 @@ QStringList RsyncOptions::verifyArguments(int port) const
     if (archive || links)
         flags += QLatin1Char('l');
     flags += QStringLiteral("ci");
-    return QStringList{QLatin1Char('-') + flags, QStringLiteral("--out-format=%i %n%L")}
-        << remoteShellArguments(port) << extraArgumentList();
+    QStringList args{QLatin1Char('-') + flags, QStringLiteral("--out-format=%i %n%L")};
+    if (!excludeFile.isEmpty())
+        args << QStringLiteral("--exclude-from=") + excludeFile;
+    args << remoteShellArguments(port) << extraArgumentList();
+    return args;
 }
 
 QString RsyncOptions::summaryFlags() const
@@ -305,6 +311,11 @@ QString RsyncOptions::validate() const
         return QObject::tr("Invalid bandwidth limit \"%1\" (examples: 500, 1.5M, 10m, 100K).").arg(bwLimit);
     if (useRemoteShell && remoteShell.trimmed().isEmpty())
         return QObject::tr("The remote shell command is empty.");
+    if (!excludeFile.isEmpty()) {
+        const QFileInfo info(excludeFile);
+        if (!info.isFile() || !info.isReadable())
+            return QObject::tr("Exclude file \"%1\" does not exist or is not readable.").arg(excludeFile);
+    }
     QStringList extra;
     if (!splitArguments(extraArguments, &extra))
         return QObject::tr("Additional arguments: unbalanced quotes.");

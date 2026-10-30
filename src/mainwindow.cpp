@@ -198,6 +198,19 @@ void MainWindow::buildUi()
     programRow->addWidget(programBrowse);
     form->addRow(tr("Program:"), programRow);
 
+    auto *excludeRow = new QHBoxLayout;
+    m_excludeEdit = new QLineEdit(m_optionsBox);
+    m_excludeEdit->setClearButtonEnabled(true);
+    m_excludeEdit->setPlaceholderText(tr("e.g. /home/user/rsync-excludes.txt"));
+    m_excludeEdit->setToolTip(tr("A file with one rsync exclude pattern per line (--exclude-from). "
+                                 "The file is read locally and is also used by the verification pass."));
+    auto *excludeBrowse = new QPushButton(QIcon::fromTheme(QStringLiteral("document-open")),
+                                          tr("Browse..."), m_optionsBox);
+    excludeBrowse->setToolTip(tr("Select a file with rsync exclude patterns"));
+    excludeRow->addWidget(m_excludeEdit, 1);
+    excludeRow->addWidget(excludeBrowse);
+    form->addRow(tr("Exclude file:"), excludeRow);
+
     auto *preserveGrid = new QGridLayout;
     m_archiveCheck = new QCheckBox(tr("Archive mode (-a)"), m_optionsBox);
     m_archiveCheck->setToolTip(tr("-a, --archive: recursive, preserve symlinks, permissions, times, group, owner "
@@ -430,6 +443,7 @@ void MainWindow::buildUi()
     });
 
     connect(programBrowse, &QPushButton::clicked, this, &MainWindow::browseProgram);
+    connect(excludeBrowse, &QPushButton::clicked, this, &MainWindow::browseExcludeFile);
     connect(defaultsButton, &QPushButton::clicked, this, [this] {
         RsyncOptions defaults;
         defaults.program = m_programCombo->count() > 0 ? m_programCombo->itemText(0) : defaults.program;
@@ -461,7 +475,7 @@ void MainWindow::buildUi()
     }
     for (QComboBox *combo : {m_existingCombo, m_progressCombo})
         connect(combo, &QComboBox::currentIndexChanged, this, refresh);
-    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_extraEdit})
+    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_excludeEdit, m_extraEdit})
         connect(edit, &QLineEdit::textChanged, this, refresh);
 }
 
@@ -633,6 +647,7 @@ RsyncOptions MainWindow::currentOptions() const
     o.bwLimit = m_bwLimitEdit->text().trimmed();
     o.useRemoteShell = m_remoteShellCheck->isChecked();
     o.remoteShell = m_remoteShellEdit->text().trimmed();
+    o.excludeFile = m_excludeEdit->text().trimmed();
     o.contentsOnly = m_contentsCheck->isChecked();
     o.deleteExtraneous = m_deleteCheck->isChecked();
     o.removeSourceFiles = m_removeSourceCheck->isChecked();
@@ -670,6 +685,7 @@ void MainWindow::applyOptions(const RsyncOptions &o)
     m_bwLimitEdit->setText(o.bwLimit);
     m_remoteShellCheck->setChecked(o.useRemoteShell);
     m_remoteShellEdit->setText(o.remoteShell);
+    m_excludeEdit->setText(o.excludeFile);
     m_contentsCheck->setChecked(o.contentsOnly);
     m_deleteCheck->setChecked(o.deleteExtraneous);
     m_removeSourceCheck->setChecked(o.removeSourceFiles);
@@ -1041,6 +1057,18 @@ void MainWindow::browseProgram()
     const QString file = QFileDialog::getOpenFileName(this, tr("Select the rsync program"), QStringLiteral("/usr/bin"));
     if (!file.isEmpty())
         m_programCombo->setCurrentText(file);
+}
+
+void MainWindow::browseExcludeFile()
+{
+    QString start = QFileInfo(m_excludeEdit->text().trimmed()).absolutePath();
+    if (start.isEmpty() || !QFileInfo(start).isDir())
+        start = QDir::homePath();
+    const QStringList files = FileDialog::openFiles(this, tr("Select the exclude list"), start,
+                                                    FileDialog::Kind::Preferred,
+                                                    QFileDialog::DontResolveSymlinks);
+    if (!files.isEmpty())
+        m_excludeEdit->setText(files.first());
 }
 
 QString MainWindow::settingsDialogDir() const

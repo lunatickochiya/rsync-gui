@@ -53,7 +53,7 @@
 ## To do
 
 - [ ] Application icon (currently the `folder-sync` theme icon)
-- [ ] Translations (`tr()` is used in the code, there are no `.ts` files yet)
+- [x] Translations (`tr()` is used in the code; Simplified Chinese `.ts`/`.qm` added)
 - [ ] Nautilus / Nemo integration (scripts or an extension)
 - [ ] `.deb` package / AppImage, CI (Gitea Actions: build + tests)
 - [ ] Very low priority: start the copy right after choosing the destination from Dolphin (`--start`).

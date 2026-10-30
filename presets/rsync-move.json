@@ -1,7 +1,7 @@
 {
     "format": "rsync-gui-settings",
     "version": 1,
-    "name": "Move",
+    "name": "移动",
     "options": {
         "archive": true,
         "recursive": true,

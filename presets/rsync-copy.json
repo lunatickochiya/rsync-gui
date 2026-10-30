@@ -1,7 +1,7 @@
 {
     "format": "rsync-gui-settings",
     "version": 1,
-    "name": "Copy",
+    "name": "复制",
     "options": {
         "archive": true,
         "recursive": true,

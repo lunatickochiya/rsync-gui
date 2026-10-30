@@ -1,7 +1,7 @@
 {
     "format": "rsync-gui-settings",
     "version": 1,
-    "name": "Copy to FAT/NTFS/NAS",
+    "name": "复制到 FAT/NTFS/NAS",
     "options": {
         "archive": false,
         "recursive": true,
