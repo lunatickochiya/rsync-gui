@@ -25,7 +25,8 @@ be passed as additional arguments.
   `--delete`, `--remove-source-files`, `-n`, copying directory contents (trailing `/`) and a field for
   **any other arguments** (e.g. `--exclude='*.tmp' --mkpath`), an **exclude file** chooser
   (`--exclude-from`), an **SSH key** field (`-i`) and backup options ported from sysbackup
-  (`--numeric-ids`, `-x`, `--sparse`, `--link-dest`),
+  (`--numeric-ids`, `-x`, `--sparse`, `--link-dest`) and **Git-tracked files only**
+  (`git ls-files`, with or without `.git`),
 - **verification after copying**: a second rsync pass that compares checksums of the source and the
   destination and lists every file that differs or is missing,
 - preview of the generated command, progress bar (per file or overall) with a live **speed graph**
@@ -334,6 +335,8 @@ the list, presets are not listed there (they have *Load preset*).
         "numericIds": true,
         "oneFileSystem": true,
         "sparse": false,
+        "gitTrackedOnly": true,
+        "gitIncludeRepo": true,
         "extraArguments": "--exclude='*.tmp'",
         "archive": true,
         "recursive": true,
@@ -377,6 +380,8 @@ the list, presets are not listed there (they have *Load preset*).
 - `linkDest` — hard-link base for unchanged files (`--link-dest`), e.g. a previous snapshot
   or a sysbackup seed directory; for a remote destination it is a path on the remote host,
 - `numericIds`, `oneFileSystem`, `sparse` — `--numeric-ids`, `-x`, `--sparse`,
+- `gitTrackedOnly`, `gitIncludeRepo` — use `git ls-files` for one local repository root and
+  include `.git` by default; the temporary `--files-from` list is not saved,
 - `extraArguments` is split like a shell command line (quotes and backslashes),
 - `name` (optional) — the name shown in the window, in *Load preset* and in the log,
 - keys missing from `options` keep the current values from the window, unknown keys are ignored,

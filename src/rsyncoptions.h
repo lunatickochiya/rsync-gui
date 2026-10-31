@@ -47,6 +47,8 @@ struct RsyncOptions
     bool numericIds = false;   // --numeric-ids
     bool oneFileSystem = false; // -x
     bool sparse = false;       // --sparse
+    bool gitTrackedOnly = false; // use a git ls-files list as --files-from
+    bool gitIncludeRepo = true;  // include .git in that list
     Existing existing = Existing::Replace;
     bool compress = false;     // -z
     bool contentsOnly = false; // trailing "/" on local source directories
@@ -63,6 +65,9 @@ struct RsyncOptions
     QString excludeFile;       // --exclude-from=<file>, read by the local rsync
     QString linkDest;          // --link-dest=<dir>, hard-link base (a seed or a previous snapshot)
     QString extraArguments;    // split like a shell command line
+    // Runtime input for gitTrackedOnly, created for one run (not saved):
+    QString filesFrom;
+    bool filesFromZero = false;
     // Whether the window sets modifyWindow for FAT destinations (off: never added automatically).
     bool autoModifyWindow = true;
     // Not an option of the window and not saved: set for a run when the destination keeps file times

@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "filedialog.h"
 #include "filelisting.h"
+#include "gitsource.h"
 #include "localpath.h"
 #include "speedgraph.h"
 
@@ -318,6 +319,19 @@ void MainWindow::buildUi()
                                    "copies the files of dir directly into dest."));
     form->addRow(tr("Directories:"), m_contentsCheck);
 
+    auto *gitRow = new QHBoxLayout;
+    m_gitTrackedCheck = new QCheckBox(tr("Only files tracked by Git"), m_optionsBox);
+    m_gitTrackedCheck->setToolTip(tr("Use one local Git repository root as the source and copy only the "
+                                     "files listed by git ls-files. Untracked and ignored files are skipped."));
+    m_gitIncludeRepoCheck = new QCheckBox(tr("Include the .git repository"), m_optionsBox);
+    m_gitIncludeRepoCheck->setChecked(true);
+    m_gitIncludeRepoCheck->setToolTip(tr("Copy the .git directory too, so the destination remains a Git "
+                                         "repository. Turn it off to copy only the working tree."));
+    gitRow->addWidget(m_gitTrackedCheck);
+    gitRow->addSpacing(16);
+    gitRow->addWidget(m_gitIncludeRepoCheck, 1);
+    form->addRow(tr("Git:"), gitRow);
+
     auto *backupGrid = new QGridLayout;
     m_numericIdsCheck = new QCheckBox(tr("Keep numeric UID/GID (--numeric-ids)"), m_optionsBox);
     m_numericIdsCheck->setToolTip(tr("Keep the numeric owner and group IDs instead of mapping them "
@@ -513,7 +527,8 @@ void MainWindow::buildUi()
     for (QCheckBox *box : {m_archiveCheck, m_hardLinksCheck, m_aclsCheck, m_xattrsCheck,
                            m_checksumCheck, m_partialCheck, m_verboseCheck, m_humanCheck, m_compressCheck,
                            m_bwLimitCheck, m_remoteShellCheck, m_numericIdsCheck, m_oneFileSystemCheck,
-                           m_sparseCheck, m_contentsCheck, m_deleteCheck, m_removeSourceCheck, m_removeSourceDirsCheck,
+                           m_sparseCheck, m_gitTrackedCheck, m_gitIncludeRepoCheck, m_contentsCheck,
+                           m_deleteCheck, m_removeSourceCheck, m_removeSourceDirsCheck,
                            m_dryRunCheck, m_verifyCheck, m_autoModifyWindowCheck}) {
         connect(box, &QCheckBox::toggled, this, refresh);
     }
@@ -696,6 +711,8 @@ RsyncOptions MainWindow::currentOptions() const
     o.numericIds = m_numericIdsCheck->isChecked();
     o.oneFileSystem = m_oneFileSystemCheck->isChecked();
     o.sparse = m_sparseCheck->isChecked();
+    o.gitTrackedOnly = m_gitTrackedCheck->isChecked();
+    o.gitIncludeRepo = m_gitIncludeRepoCheck->isChecked();
     o.linkDest = m_linkDestEdit->text().trimmed();
     o.contentsOnly = m_contentsCheck->isChecked();
     o.deleteExtraneous = m_deleteCheck->isChecked();
@@ -739,6 +756,8 @@ void MainWindow::applyOptions(const RsyncOptions &o)
     m_numericIdsCheck->setChecked(o.numericIds);
     m_oneFileSystemCheck->setChecked(o.oneFileSystem);
     m_sparseCheck->setChecked(o.sparse);
+    m_gitTrackedCheck->setChecked(o.gitTrackedOnly);
+    m_gitIncludeRepoCheck->setChecked(o.gitIncludeRepo);
     m_linkDestEdit->setText(o.linkDest);
     m_contentsCheck->setChecked(o.contentsOnly);
     m_deleteCheck->setChecked(o.deleteExtraneous);
@@ -988,6 +1007,11 @@ void MainWindow::updatePreview()
         text += tr("   (+ verification pass, then the sources are removed)");
     else if (options.canVerify())
         text += tr("   (+ verification pass)");
+    if (options.gitTrackedOnly) {
+        text += options.gitIncludeRepo
+                    ? tr("   (only Git-tracked files, including .git)")
+                    : tr("   (only Git-tracked files)");
+    }
     m_previewEdit->setText(text);
     m_previewEdit->setCursorPosition(0);
 }
@@ -1009,6 +1033,7 @@ void MainWindow::updateControls()
     m_bwLimitEdit->setEnabled(m_bwLimitCheck->isChecked());
     m_remoteShellEdit->setEnabled(m_remoteShellCheck->isChecked());
     m_removeSourceDirsCheck->setEnabled(m_removeSourceCheck->isChecked());
+    m_gitIncludeRepoCheck->setEnabled(m_gitTrackedCheck->isChecked());
     m_removeSourcesButton->setEnabled(!m_sourceList->selectedItems().isEmpty());
     m_clearSourcesButton->setEnabled(m_sourceList->count() > 0);
     m_startButton->setEnabled(!running && m_sourceList->count() > 0 && destination().isValid());
@@ -1019,6 +1044,13 @@ void MainWindow::updateControls()
     QString error = currentOptions().validate();
     if (error.isEmpty() && m_verifyCheck->isChecked() && !currentOptions().canVerify())
         error = tr("Verification is not done for a dry run.");
+    if (error.isEmpty() && m_gitTrackedCheck->isChecked()) {
+        const QList<Location> gitSources = sources();
+        if (gitSources.size() != 1 || gitSources.first().isRemote()
+            || !LocalPath::info(gitSources.first().path).isDir) {
+            error = tr("Git-tracked mode needs exactly one local repository root.");
+        }
+    }
     statusBar()->showMessage(error);
 }
 
@@ -1251,6 +1283,34 @@ void MainWindow::showAbout()
                            .arg(QApplication::applicationVersion()));
 }
 
+bool MainWindow::prepareGitFileList(RsyncOptions &options, QString *error)
+{
+    m_gitFileList.reset();
+    const QList<Location> gitSources = sources();
+    if (gitSources.size() != 1 || gitSources.first().isRemote()
+        || !LocalPath::info(gitSources.first().path).isDir) {
+        *error = tr("Git-tracked mode needs exactly one local repository root.");
+        return false;
+    }
+    const QString repo = gitSources.first().path;
+    if (!GitSource::isRepositoryRoot(repo, error))
+        return false;
+
+    auto list = std::make_unique<QTemporaryFile>(
+        QDir::tempPath() + QStringLiteral("/rsync-gui-git-XXXXXX"));
+    if (!list->open()) {
+        *error = tr("Cannot create the temporary Git file list: %1").arg(list->errorString());
+        return false;
+    }
+    if (!GitSource::writeTrackedFileList(repo, options.gitIncludeRepo, list.get(), error))
+        return false;
+    list->close();
+    options.filesFrom = list->fileName();
+    options.filesFromZero = true;
+    m_gitFileList = std::move(list);
+    return true;
+}
+
 void MainWindow::startCopy()
 {
     if (m_job && m_job->isRunning())
@@ -1274,8 +1334,17 @@ void MainWindow::startCopy()
         }
     }
 
+    if (options.gitTrackedOnly) {
+        QString gitError;
+        if (!prepareGitFileList(options, &gitError)) {
+            QMessageBox::warning(this, tr("Cannot continue"), gitError);
+            return;
+        }
+    }
+
     RsyncJob::Plan plan = RsyncJob::plan(sources(), dest, options);
     if (!plan.error.isEmpty()) {
+        m_gitFileList.reset();
         QMessageBox::warning(this, tr("Cannot continue"), plan.error);
         return;
     }
@@ -1538,6 +1607,7 @@ void MainWindow::onJobFinished()
         QMessageBox::warning(this, tr("Finished with errors"),
                              tr("Not everything could be copied. See the log for details."));
     }
+    m_gitFileList.reset();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -70,6 +70,8 @@ constexpr BoolOption kBoolOptions[] = {
     {"numericIds", &RsyncOptions::numericIds},
     {"oneFileSystem", &RsyncOptions::oneFileSystem},
     {"sparse", &RsyncOptions::sparse},
+    {"gitTrackedOnly", &RsyncOptions::gitTrackedOnly},
+    {"gitIncludeRepo", &RsyncOptions::gitIncludeRepo},
     {"compress", &RsyncOptions::compress},
     {"contentsOnly", &RsyncOptions::contentsOnly},
     {"deleteExtraneous", &RsyncOptions::deleteExtraneous},
@@ -220,6 +222,11 @@ QStringList RsyncOptions::buildArguments(int port, bool removeSources) const
         longOptions << QStringLiteral("--sparse");
     if (!linkDest.isEmpty())
         longOptions << QStringLiteral("--link-dest=") + linkDest;
+    if (!filesFrom.isEmpty()) {
+        longOptions << QStringLiteral("--files-from=") + filesFrom;
+        if (filesFromZero)
+            longOptions << QStringLiteral("--from0");
+    }
     if (!excludeFile.isEmpty())
         longOptions << QStringLiteral("--exclude-from=") + excludeFile;
     const QStringList extra = extraArgumentList();
@@ -252,6 +259,11 @@ QStringList RsyncOptions::verifyArguments(int port) const
     QStringList args{QLatin1Char('-') + flags, QStringLiteral("--out-format=%i %n%L")};
     if (numericIds)
         args << QStringLiteral("--numeric-ids");
+    if (!filesFrom.isEmpty()) {
+        args << QStringLiteral("--files-from=") + filesFrom;
+        if (filesFromZero)
+            args << QStringLiteral("--from0");
+    }
     if (!excludeFile.isEmpty())
         args << QStringLiteral("--exclude-from=") + excludeFile;
     args << remoteShellArguments(port) << extraArgumentList();

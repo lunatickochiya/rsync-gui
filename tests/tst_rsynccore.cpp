@@ -1,10 +1,12 @@
 #include "filelisting.h"
+#include "gitsource.h"
 #include "localpath.h"
 #include "location.h"
 #include "rsyncjob.h"
 #include "rsyncoptions.h"
 #include "speedhistory.h"
 
+#include <QBuffer>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -221,6 +223,8 @@ private slots:
     void verifyArguments();
     void excludeFileArguments();
     void excludeFileValidation();
+    void gitFileListArguments();
+    void gitTrackedFiles();
     void remoteShell();
     void splitArgs_data();
     void splitArgs();
@@ -449,6 +453,58 @@ void TestRsyncCore::excludeFileValidation()
     QVERIFY(!o.validate().isEmpty());
     o.excludeFile = QStringLiteral("/etc/hostname");
     QVERIFY(o.validate().isEmpty());
+}
+
+void TestRsyncCore::gitFileListArguments()
+{
+    RsyncOptions o;
+    o.filesFrom = QStringLiteral("/tmp/git-files");
+    o.filesFromZero = true;
+    QCOMPARE(o.arguments(), (QStringList{"-avhP", "--files-from=/tmp/git-files", "--from0"}));
+    QCOMPARE(o.verifyArguments(),
+             (QStringList{"-nrlci", "--out-format=%i %n%L", "--files-from=/tmp/git-files", "--from0"}));
+}
+
+void TestRsyncCore::gitTrackedFiles()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("git")).isEmpty())
+        QSKIP("git is not installed");
+
+    QTemporaryDir repo(QDir::tempPath() + QStringLiteral("/rsync-gui-git-test-XXXXXX"));
+    QVERIFY(repo.isValid());
+    const auto runGit = [&](const QStringList &arguments) {
+        QProcess process;
+        process.setWorkingDirectory(repo.path());
+        process.start(QStringLiteral("git"), arguments);
+        if (!process.waitForFinished(10000))
+            return false;
+        return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
+    };
+    QVERIFY(runGit({QStringLiteral("init"), QStringLiteral("-q")}));
+    writeFile(repo.filePath(QStringLiteral("a.txt")), "a");
+    writeFile(repo.filePath(QStringLiteral("dir/b.txt")), "b");
+    writeFile(repo.filePath(QStringLiteral("untracked.txt")), "u");
+    QVERIFY(runGit({QStringLiteral("add"), QStringLiteral("a.txt"), QStringLiteral("dir/b.txt")}));
+
+    QString error;
+    QVERIFY2(GitSource::isRepositoryRoot(repo.path(), &error), qPrintable(error));
+    QTemporaryDir other;
+    QVERIFY(other.isValid());
+    QVERIFY(!GitSource::isRepositoryRoot(other.path(), &error));
+
+    QBuffer withoutGit;
+    QVERIFY(withoutGit.open(QIODevice::WriteOnly));
+    QVERIFY2(GitSource::writeTrackedFileList(repo.path(), false, &withoutGit, &error), qPrintable(error));
+    const QList<QByteArray> paths = withoutGit.data().split('\0');
+    QVERIFY(paths.contains("a.txt"));
+    QVERIFY(paths.contains("dir/b.txt"));
+    QVERIFY(!paths.contains("untracked.txt"));
+    QVERIFY(!paths.contains(".git"));
+
+    QBuffer withGit;
+    QVERIFY(withGit.open(QIODevice::WriteOnly));
+    QVERIFY2(GitSource::writeTrackedFileList(repo.path(), true, &withGit, &error), qPrintable(error));
+    QVERIFY(withGit.data().contains(".git/HEAD\0"));
 }
 
 void TestRsyncCore::remoteShell()
@@ -1267,6 +1323,8 @@ void TestRsyncCore::jsonRoundTrip()
     o.sshKey = "/home/user/.ssh/key";
     o.excludeFile = "/tmp/excludes.txt";
     o.numericIds = o.oneFileSystem = o.sparse = true;
+    o.gitTrackedOnly = true;
+    o.gitIncludeRepo = false;
     o.linkDest = "/backup/prev";
     o.extraArguments = "--exclude='*.tmp'";
     o.autoModifyWindow = false;

@@ -8,6 +8,7 @@
 #include <QDate>
 #include <QMainWindow>
 #include <QPointer>
+#include <QTemporaryFile>
 
 #include <atomic>
 #include <memory>
@@ -87,6 +88,7 @@ private:
     void browseSshKey();
     void browseExcludeFile();
     void browseLinkDest();
+    bool prepareGitFileList(RsyncOptions &options, QString *error);
     void importSettings();
     void exportSettings();
     void showAbout();
@@ -148,6 +150,8 @@ private:
     QCheckBox *m_numericIdsCheck = nullptr;
     QCheckBox *m_oneFileSystemCheck = nullptr;
     QCheckBox *m_sparseCheck = nullptr;
+    QCheckBox *m_gitTrackedCheck = nullptr;
+    QCheckBox *m_gitIncludeRepoCheck = nullptr;
     QLineEdit *m_linkDestEdit = nullptr;
     QCheckBox *m_contentsCheck = nullptr;
     QCheckBox *m_deleteCheck = nullptr;
@@ -176,6 +180,7 @@ private:
     QDate m_logDate; // the date of the last log line - a new day gets a line of its own
     DesktopProgress *m_desktopProgress = nullptr;
     std::shared_ptr<std::atomic_bool> m_measureCancel; // stops measuring the sources
+    std::unique_ptr<QTemporaryFile> m_gitFileList; // the --files-from list of the current job
     // False while the options come from a preset or a --config file: they are not remembered.
     bool m_rememberOptions = true;
 };
