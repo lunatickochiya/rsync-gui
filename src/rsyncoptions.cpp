@@ -67,6 +67,9 @@ constexpr BoolOption kBoolOptions[] = {
     {"human", &RsyncOptions::human},
     {"partial", &RsyncOptions::partial},
     {"checksum", &RsyncOptions::checksum},
+    {"numericIds", &RsyncOptions::numericIds},
+    {"oneFileSystem", &RsyncOptions::oneFileSystem},
+    {"sparse", &RsyncOptions::sparse},
     {"compress", &RsyncOptions::compress},
     {"contentsOnly", &RsyncOptions::contentsOnly},
     {"deleteExtraneous", &RsyncOptions::deleteExtraneous},
@@ -91,6 +94,7 @@ constexpr StringOption kStringOptions[] = {
     {"remoteShell", &RsyncOptions::remoteShell},
     {"sshKey", &RsyncOptions::sshKey},
     {"excludeFile", &RsyncOptions::excludeFile},
+    {"linkDest", &RsyncOptions::linkDest},
     {"extraArguments", &RsyncOptions::extraArguments},
 };
 
@@ -171,6 +175,8 @@ QStringList RsyncOptions::buildArguments(int port, bool removeSources) const
         flags += QLatin1Char('A');
     if (xattrs)
         flags += QLatin1Char('X');
+    if (oneFileSystem)
+        flags += QLatin1Char('x');
     if (verbose)
         flags += QLatin1Char('v');
     if (human)
@@ -208,6 +214,12 @@ QStringList RsyncOptions::buildArguments(int port, bool removeSources) const
         longOptions << QStringLiteral("--remove-source-files");
     if (useBwLimit)
         longOptions << QStringLiteral("--bwlimit=") + bwLimit.trimmed();
+    if (numericIds)
+        longOptions << QStringLiteral("--numeric-ids");
+    if (sparse)
+        longOptions << QStringLiteral("--sparse");
+    if (!linkDest.isEmpty())
+        longOptions << QStringLiteral("--link-dest=") + linkDest;
     if (!excludeFile.isEmpty())
         longOptions << QStringLiteral("--exclude-from=") + excludeFile;
     const QStringList extra = extraArgumentList();
@@ -234,8 +246,12 @@ QStringList RsyncOptions::verifyArguments(int port) const
         flags += QLatin1Char('r');
     if (archive || links)
         flags += QLatin1Char('l');
+    if (oneFileSystem)
+        flags += QLatin1Char('x');
     flags += QStringLiteral("ci");
     QStringList args{QLatin1Char('-') + flags, QStringLiteral("--out-format=%i %n%L")};
+    if (numericIds)
+        args << QStringLiteral("--numeric-ids");
     if (!excludeFile.isEmpty())
         args << QStringLiteral("--exclude-from=") + excludeFile;
     args << remoteShellArguments(port) << extraArgumentList();
@@ -259,7 +275,7 @@ QString RsyncOptions::summaryFlags() const
     }
     const std::pair<bool, char> others[] = {
         {hardLinks, 'H'}, {acls, 'A'}, {xattrs, 'X'}, {checksum, 'c'},
-        {existing == Existing::SkipNewer, 'u'}, {compress, 'z'},
+        {oneFileSystem, 'x'}, {existing == Existing::SkipNewer, 'u'}, {compress, 'z'},
     };
     for (const auto &[enabled, flag] : others) {
         if (enabled)

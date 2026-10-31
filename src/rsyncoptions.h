@@ -44,6 +44,9 @@ struct RsyncOptions
     bool partial = true;       // --partial
     Progress progress = Progress::PerFile;
     bool checksum = false;     // -c
+    bool numericIds = false;   // --numeric-ids
+    bool oneFileSystem = false; // -x
+    bool sparse = false;       // --sparse
     Existing existing = Existing::Replace;
     bool compress = false;     // -z
     bool contentsOnly = false; // trailing "/" on local source directories
@@ -58,6 +61,7 @@ struct RsyncOptions
     QString remoteShell;
     QString sshKey;            // -i <key> in the ssh command
     QString excludeFile;       // --exclude-from=<file>, read by the local rsync
+    QString linkDest;          // --link-dest=<dir>, hard-link base (a seed or a previous snapshot)
     QString extraArguments;    // split like a shell command line
     // Whether the window sets modifyWindow for FAT destinations (off: never added automatically).
     bool autoModifyWindow = true;

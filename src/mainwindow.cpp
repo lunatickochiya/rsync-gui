@@ -318,6 +318,34 @@ void MainWindow::buildUi()
                                    "copies the files of dir directly into dest."));
     form->addRow(tr("Directories:"), m_contentsCheck);
 
+    auto *backupGrid = new QGridLayout;
+    m_numericIdsCheck = new QCheckBox(tr("Keep numeric UID/GID (--numeric-ids)"), m_optionsBox);
+    m_numericIdsCheck->setToolTip(tr("Keep the numeric owner and group IDs instead of mapping them "
+                                     "to names; needed for exact system restores."));
+    m_oneFileSystemCheck = new QCheckBox(tr("Stay on the source file system (-x)"), m_optionsBox);
+    m_oneFileSystemCheck->setToolTip(tr("Do not cross file system boundaries, e.g. skip mounted disks "
+                                        "below the source."));
+    m_sparseCheck = new QCheckBox(tr("Sparse files (--sparse)"), m_optionsBox);
+    m_sparseCheck->setToolTip(tr("Write long runs of zeros as sparse blocks; useful for disk images."));
+    backupGrid->addWidget(m_numericIdsCheck, 0, 0);
+    backupGrid->addWidget(m_oneFileSystemCheck, 0, 1);
+    backupGrid->addWidget(m_sparseCheck, 0, 2);
+    form->addRow(tr("Backup:"), backupGrid);
+
+    auto *linkDestRow = new QHBoxLayout;
+    m_linkDestEdit = new QLineEdit(m_optionsBox);
+    m_linkDestEdit->setClearButtonEnabled(true);
+    m_linkDestEdit->setPlaceholderText(tr("e.g. /mnt/data/debian/seed or a previous snapshot"));
+    m_linkDestEdit->setToolTip(tr("Hard-link unchanged files from this directory instead of transferring them "
+                                  "(--link-dest). Use a previous snapshot or sysbackup's seed directory. "
+                                  "For a remote destination, enter the path on the remote host."));
+    auto *linkDestBrowse = new QPushButton(QIcon::fromTheme(QStringLiteral("folder-open")),
+                                           tr("Browse..."), m_optionsBox);
+    linkDestBrowse->setToolTip(tr("Select the hard-link base directory"));
+    linkDestRow->addWidget(m_linkDestEdit, 1);
+    linkDestRow->addWidget(linkDestBrowse);
+    form->addRow(tr("Hard-link base (--link-dest):"), linkDestRow);
+
     m_deleteCheck = new QCheckBox(tr("Delete files in the destination that are not in the source (--delete)"), m_optionsBox);
     m_deleteCheck->setToolTip(tr("--delete: makes the destination an exact mirror of the source directories. "
                                  "Files that exist only in the destination are deleted!"));
@@ -458,6 +486,7 @@ void MainWindow::buildUi()
     connect(programBrowse, &QPushButton::clicked, this, &MainWindow::browseProgram);
     connect(sshKeyBrowse, &QPushButton::clicked, this, &MainWindow::browseSshKey);
     connect(excludeBrowse, &QPushButton::clicked, this, &MainWindow::browseExcludeFile);
+    connect(linkDestBrowse, &QPushButton::clicked, this, &MainWindow::browseLinkDest);
     connect(defaultsButton, &QPushButton::clicked, this, [this] {
         RsyncOptions defaults;
         defaults.program = m_programCombo->count() > 0 ? m_programCombo->itemText(0) : defaults.program;
@@ -483,13 +512,14 @@ void MainWindow::buildUi()
         connect(box, &QCheckBox::toggled, this, refresh);
     for (QCheckBox *box : {m_archiveCheck, m_hardLinksCheck, m_aclsCheck, m_xattrsCheck,
                            m_checksumCheck, m_partialCheck, m_verboseCheck, m_humanCheck, m_compressCheck,
-                           m_bwLimitCheck, m_remoteShellCheck, m_contentsCheck, m_deleteCheck, m_removeSourceCheck, m_removeSourceDirsCheck,
+                           m_bwLimitCheck, m_remoteShellCheck, m_numericIdsCheck, m_oneFileSystemCheck,
+                           m_sparseCheck, m_contentsCheck, m_deleteCheck, m_removeSourceCheck, m_removeSourceDirsCheck,
                            m_dryRunCheck, m_verifyCheck, m_autoModifyWindowCheck}) {
         connect(box, &QCheckBox::toggled, this, refresh);
     }
     for (QComboBox *combo : {m_existingCombo, m_progressCombo})
         connect(combo, &QComboBox::currentIndexChanged, this, refresh);
-    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_sshKeyEdit, m_excludeEdit, m_extraEdit})
+    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_sshKeyEdit, m_excludeEdit, m_linkDestEdit, m_extraEdit})
         connect(edit, &QLineEdit::textChanged, this, refresh);
 }
 
@@ -663,6 +693,10 @@ RsyncOptions MainWindow::currentOptions() const
     o.remoteShell = m_remoteShellEdit->text().trimmed();
     o.sshKey = m_sshKeyEdit->text().trimmed();
     o.excludeFile = m_excludeEdit->text().trimmed();
+    o.numericIds = m_numericIdsCheck->isChecked();
+    o.oneFileSystem = m_oneFileSystemCheck->isChecked();
+    o.sparse = m_sparseCheck->isChecked();
+    o.linkDest = m_linkDestEdit->text().trimmed();
     o.contentsOnly = m_contentsCheck->isChecked();
     o.deleteExtraneous = m_deleteCheck->isChecked();
     o.removeSourceFiles = m_removeSourceCheck->isChecked();
@@ -702,6 +736,10 @@ void MainWindow::applyOptions(const RsyncOptions &o)
     m_remoteShellEdit->setText(o.remoteShell);
     m_sshKeyEdit->setText(o.sshKey);
     m_excludeEdit->setText(o.excludeFile);
+    m_numericIdsCheck->setChecked(o.numericIds);
+    m_oneFileSystemCheck->setChecked(o.oneFileSystem);
+    m_sparseCheck->setChecked(o.sparse);
+    m_linkDestEdit->setText(o.linkDest);
     m_contentsCheck->setChecked(o.contentsOnly);
     m_deleteCheck->setChecked(o.deleteExtraneous);
     m_removeSourceCheck->setChecked(o.removeSourceFiles);
@@ -1087,6 +1125,18 @@ void MainWindow::browseSshKey()
                                                     QFileDialog::DontResolveSymlinks);
     if (!files.isEmpty())
         m_sshKeyEdit->setText(files.first());
+}
+
+void MainWindow::browseLinkDest()
+{
+    QString start = QFileInfo(m_linkDestEdit->text().trimmed()).absolutePath();
+    if (start.isEmpty() || !QFileInfo(start).isDir())
+        start = QDir::homePath();
+    const QString dir = FileDialog::existingDirectory(this, tr("Select the hard-link base directory"), start,
+                                                      FileDialog::Kind::Preferred,
+                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (!dir.isEmpty())
+        m_linkDestEdit->setText(dir);
 }
 
 void MainWindow::browseExcludeFile()

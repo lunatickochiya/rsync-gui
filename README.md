@@ -24,7 +24,8 @@ be passed as additional arguments.
   `--progress` / `--info=progress2`, `-c`, `-u`, `--ignore-existing`, `-z`, `--bwlimit`, `-e`,
   `--delete`, `--remove-source-files`, `-n`, copying directory contents (trailing `/`) and a field for
   **any other arguments** (e.g. `--exclude='*.tmp' --mkpath`), an **exclude file** chooser
-  (`--exclude-from`) and an **SSH key** field (`-i`),
+  (`--exclude-from`), an **SSH key** field (`-i`) and backup options ported from sysbackup
+  (`--numeric-ids`, `-x`, `--sparse`, `--link-dest`),
 - **verification after copying**: a second rsync pass that compares checksums of the source and the
   destination and lists every file that differs or is missing,
 - preview of the generated command, progress bar (per file or overall) with a live **speed graph**
@@ -329,6 +330,10 @@ the list, presets are not listed there (they have *Load preset*).
         "remoteShell": "",
         "sshKey": "/home/user/.ssh/id_ed25519",
         "excludeFile": "/home/user/rsync-excludes.txt",
+        "linkDest": "/mnt/backup/previous",
+        "numericIds": true,
+        "oneFileSystem": true,
+        "sparse": false,
         "extraArguments": "--exclude='*.tmp'",
         "archive": true,
         "recursive": true,
@@ -369,6 +374,9 @@ the list, presets are not listed there (they have *Load preset*).
 - `sshKey` — private SSH key passed to ssh with `-i` for remote locations,
 - `excludeFile` — path to a local file with one rsync exclude pattern per line (`--exclude-from`);
   it is also passed to the verification pass,
+- `linkDest` — hard-link base for unchanged files (`--link-dest`), e.g. a previous snapshot
+  or a sysbackup seed directory; for a remote destination it is a path on the remote host,
+- `numericIds`, `oneFileSystem`, `sparse` — `--numeric-ids`, `-x`, `--sparse`,
 - `extraArguments` is split like a shell command line (quotes and backslashes),
 - `name` (optional) — the name shown in the window, in *Load preset* and in the log,
 - keys missing from `options` keep the current values from the window, unknown keys are ignored,

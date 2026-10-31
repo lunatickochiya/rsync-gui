@@ -330,6 +330,10 @@ void TestRsyncCore::arguments_data()
     QTest::newRow("delete") << "delete" << QStringList{"-avhP", "--delete"};
     QTest::newRow("move") << "move" << QStringList{"-avhP", "--remove-source-files"};
     QTest::newRow("bwlimit") << "bwlimit" << QStringList{"-avhP", "--bwlimit=10M"};
+    QTest::newRow("numeric ids") << "numeric" << QStringList{"-avhP", "--numeric-ids"};
+    QTest::newRow("one file system") << "onefs" << QStringList{"-axvhP"};
+    QTest::newRow("sparse") << "sparse" << QStringList{"-avhP", "--sparse"};
+    QTest::newRow("link dest") << "linkdest" << QStringList{"-avhP", "--link-dest=/backup/prev"};
     QTest::newRow("extra") << "extra"
                            << QStringList{"-avhP", "--exclude=*.tmp", "--exclude", "a b", "--mkpath"};
     QTest::newRow("nothing") << "nothing" << QStringList{};
@@ -374,6 +378,14 @@ void TestRsyncCore::arguments()
     } else if (change == "bwlimit") {
         o.useBwLimit = true;
         o.bwLimit = " 10M ";
+    } else if (change == "numeric") {
+        o.numericIds = true;
+    } else if (change == "onefs") {
+        o.oneFileSystem = true;
+    } else if (change == "sparse") {
+        o.sparse = true;
+    } else if (change == "linkdest") {
+        o.linkDest = "/backup/prev";
     } else if (change == "extra") {
         o.extraArguments = "--exclude='*.tmp' --exclude \"a b\" --mkpath";
     } else if (change == "nothing") {
@@ -410,6 +422,12 @@ void TestRsyncCore::verifyArguments()
     o.verifyAfter = false;
     QVERIFY(!o.verifiedMove());
     QVERIFY(o.arguments().contains(QStringLiteral("--remove-source-files")));
+
+    RsyncOptions backup;
+    backup.oneFileSystem = backup.numericIds = true;
+    QCOMPARE(backup.arguments(), (QStringList{"-axvhP", "--numeric-ids"}));
+    QCOMPARE(backup.verifyArguments(),
+             (QStringList{"-nrlxci", "--out-format=%i %n%L", "--numeric-ids"}));
 }
 
 void TestRsyncCore::excludeFileArguments()
@@ -1248,6 +1266,8 @@ void TestRsyncCore::jsonRoundTrip()
     o.remoteShell = "ssh -i key";
     o.sshKey = "/home/user/.ssh/key";
     o.excludeFile = "/tmp/excludes.txt";
+    o.numericIds = o.oneFileSystem = o.sparse = true;
+    o.linkDest = "/backup/prev";
     o.extraArguments = "--exclude='*.tmp'";
     o.autoModifyWindow = false;
 
@@ -1431,6 +1451,7 @@ void TestRsyncCore::summaryFlags_data()
     QTest::newRow("move") << "move" << "-a";             // "Move" in the name says it
     QTest::newRow("output only") << "output" << "-a";    // -v -h -P -n do not count
     QTest::newRow("preserve, update") << "preserve" << "-aHAXuz";
+    QTest::newRow("one file system") << "onefs" << "-ax";
     QTest::newRow("delete, ignore") << "delete" << "-a --ignore-existing --delete";
     QTest::newRow("nothing") << "nothing" << "";
 }
@@ -1453,6 +1474,8 @@ void TestRsyncCore::summaryFlags()
     } else if (change == "preserve") {
         o.hardLinks = o.acls = o.xattrs = o.compress = true;
         o.existing = RsyncOptions::Existing::SkipNewer;
+    } else if (change == "onefs") {
+        o.oneFileSystem = true;
     } else if (change == "delete") {
         o.existing = RsyncOptions::Existing::IgnoreExisting;
         o.deleteExtraneous = true;
