@@ -89,6 +89,7 @@ constexpr StringOption kStringOptions[] = {
     {"program", &RsyncOptions::program},
     {"bwLimit", &RsyncOptions::bwLimit},
     {"remoteShell", &RsyncOptions::remoteShell},
+    {"sshKey", &RsyncOptions::sshKey},
     {"excludeFile", &RsyncOptions::excludeFile},
     {"extraArguments", &RsyncOptions::extraArguments},
 };
@@ -283,6 +284,16 @@ QString RsyncOptions::label(const QString &name) const
 QStringList RsyncOptions::remoteShellArguments(int port) const
 {
     QString shell = useRemoteShell ? remoteShell.trimmed() : QString();
+    if (!sshKey.trimmed().isEmpty()) {
+        QString key = sshKey.trimmed();
+        if (key == QLatin1String("~"))
+            key = QDir::homePath();
+        else if (key.startsWith(QLatin1String("~/")))
+            key = QDir::homePath() + key.mid(1);
+        if (shell.isEmpty())
+            shell = QStringLiteral("ssh");
+        shell += QStringLiteral(" -i ") + shellQuote(key);
+    }
     if (port > 0)
         shell = (shell.isEmpty() ? QStringLiteral("ssh") : shell) + QStringLiteral(" -p ") + QString::number(port);
     if (shell.isEmpty())
@@ -311,6 +322,16 @@ QString RsyncOptions::validate() const
         return QObject::tr("Invalid bandwidth limit \"%1\" (examples: 500, 1.5M, 10m, 100K).").arg(bwLimit);
     if (useRemoteShell && remoteShell.trimmed().isEmpty())
         return QObject::tr("The remote shell command is empty.");
+    if (!sshKey.trimmed().isEmpty()) {
+        QString key = sshKey.trimmed();
+        if (key == QLatin1String("~"))
+            key = QDir::homePath();
+        else if (key.startsWith(QLatin1String("~/")))
+            key = QDir::homePath() + key.mid(1);
+        const QFileInfo info(key);
+        if (!info.isFile() || !info.isReadable())
+            return QObject::tr("SSH key \"%1\" does not exist or is not readable.").arg(sshKey);
+    }
     if (!excludeFile.isEmpty()) {
         const QFileInfo info(excludeFile);
         if (!info.isFile() || !info.isReadable())

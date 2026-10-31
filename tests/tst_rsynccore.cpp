@@ -446,6 +446,12 @@ void TestRsyncCore::remoteShell()
     // The shell text is ignored while the option is off.
     o.useRemoteShell = false;
     QCOMPARE(o.remoteShellArguments(0), QStringList());
+
+    o.sshKey = QStringLiteral("/home/user/.ssh/key");
+    QCOMPARE(o.remoteShellArguments(0), (QStringList{"-e", "ssh -i /home/user/.ssh/key"}));
+    QCOMPARE(o.remoteShellArguments(2222),
+             (QStringList{"-e", "ssh -i /home/user/.ssh/key -p 2222"}));
+    o.sshKey.clear();
 }
 
 void TestRsyncCore::splitArgs_data()
@@ -512,6 +518,12 @@ void TestRsyncCore::validateOptions()
     bad.useRemoteShell = true;
     QVERIFY(!bad.validate().isEmpty());
     bad.remoteShell = "ssh";
+    QVERIFY(bad.validate().isEmpty());
+
+    bad = o;
+    bad.sshKey = QStringLiteral("/definitely/not/here/key");
+    QVERIFY(!bad.validate().isEmpty());
+    bad.sshKey = QStringLiteral("/etc/hostname");
     QVERIFY(bad.validate().isEmpty());
 
     bad = o;
@@ -1234,6 +1246,7 @@ void TestRsyncCore::jsonRoundTrip()
     o.bwLimit = "10M";
     o.useRemoteShell = true;
     o.remoteShell = "ssh -i key";
+    o.sshKey = "/home/user/.ssh/key";
     o.excludeFile = "/tmp/excludes.txt";
     o.extraArguments = "--exclude='*.tmp'";
     o.autoModifyWindow = false;

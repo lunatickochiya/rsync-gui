@@ -83,6 +83,27 @@ cmake --install build --prefix ~/.local
 sudo cmake --install build
 ```
 
+## SSH 密钥
+
+在“SSH 密钥”一栏选择私钥（或输入 `~/.ssh/id_ed25519`），程序会把它作为
+`ssh -i <私钥>` 传给 rsync；配合 `user@host:/path` 或
+`sftp://user@host:port/path` 使用。
+
+首次配置（在终端）：
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/rsync-gui_ed25519 -N ''
+ssh-copy-id -i ~/.ssh/rsync-gui_ed25519.pub user@host
+```
+
+然后在 GUI 中选择 `~/.ssh/rsync-gui_ed25519`。私钥权限应为 600：
+
+```bash
+chmod 600 ~/.ssh/rsync-gui_ed25519
+```
+
+如果私钥有口令，请先启动 `ssh-agent`；没有口令的密钥更适合无人值守任务。
+
 ## 排除文件
 
 “排除文件”一栏可以直接选择每行一个 rsync 排除模式的文件，程序会生成

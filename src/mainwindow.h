@@ -84,6 +84,7 @@ private:
     void browseFiles(bool builtIn = false);
     void browseDirectory(bool builtIn = false);
     void browseProgram();
+    void browseSshKey();
     void browseExcludeFile();
     void importSettings();
     void exportSettings();
@@ -141,6 +142,7 @@ private:
     QLineEdit *m_bwLimitEdit = nullptr;
     QCheckBox *m_remoteShellCheck = nullptr;
     QLineEdit *m_remoteShellEdit = nullptr;
+    QLineEdit *m_sshKeyEdit = nullptr;
     QLineEdit *m_excludeEdit = nullptr;
     QCheckBox *m_contentsCheck = nullptr;
     QCheckBox *m_deleteCheck = nullptr;

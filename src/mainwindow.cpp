@@ -211,6 +211,19 @@ void MainWindow::buildUi()
     excludeRow->addWidget(excludeBrowse);
     form->addRow(tr("Exclude file:"), excludeRow);
 
+    auto *sshKeyRow = new QHBoxLayout;
+    m_sshKeyEdit = new QLineEdit(m_optionsBox);
+    m_sshKeyEdit->setClearButtonEnabled(true);
+    m_sshKeyEdit->setPlaceholderText(tr("e.g. ~/.ssh/id_ed25519"));
+    m_sshKeyEdit->setToolTip(tr("Private SSH key passed to ssh with -i. "
+                                "It is used for user@host:path and sftp:// destinations."));
+    auto *sshKeyBrowse = new QPushButton(QIcon::fromTheme(QStringLiteral("document-open")),
+                                         tr("Browse..."), m_optionsBox);
+    sshKeyBrowse->setToolTip(tr("Select the SSH private key"));
+    sshKeyRow->addWidget(m_sshKeyEdit, 1);
+    sshKeyRow->addWidget(sshKeyBrowse);
+    form->addRow(tr("SSH key:"), sshKeyRow);
+
     auto *preserveGrid = new QGridLayout;
     m_archiveCheck = new QCheckBox(tr("Archive mode (-a)"), m_optionsBox);
     m_archiveCheck->setToolTip(tr("-a, --archive: recursive, preserve symlinks, permissions, times, group, owner "
@@ -443,6 +456,7 @@ void MainWindow::buildUi()
     });
 
     connect(programBrowse, &QPushButton::clicked, this, &MainWindow::browseProgram);
+    connect(sshKeyBrowse, &QPushButton::clicked, this, &MainWindow::browseSshKey);
     connect(excludeBrowse, &QPushButton::clicked, this, &MainWindow::browseExcludeFile);
     connect(defaultsButton, &QPushButton::clicked, this, [this] {
         RsyncOptions defaults;
@@ -475,7 +489,7 @@ void MainWindow::buildUi()
     }
     for (QComboBox *combo : {m_existingCombo, m_progressCombo})
         connect(combo, &QComboBox::currentIndexChanged, this, refresh);
-    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_excludeEdit, m_extraEdit})
+    for (QLineEdit *edit : {m_bwLimitEdit, m_remoteShellEdit, m_sshKeyEdit, m_excludeEdit, m_extraEdit})
         connect(edit, &QLineEdit::textChanged, this, refresh);
 }
 
@@ -647,6 +661,7 @@ RsyncOptions MainWindow::currentOptions() const
     o.bwLimit = m_bwLimitEdit->text().trimmed();
     o.useRemoteShell = m_remoteShellCheck->isChecked();
     o.remoteShell = m_remoteShellEdit->text().trimmed();
+    o.sshKey = m_sshKeyEdit->text().trimmed();
     o.excludeFile = m_excludeEdit->text().trimmed();
     o.contentsOnly = m_contentsCheck->isChecked();
     o.deleteExtraneous = m_deleteCheck->isChecked();
@@ -685,6 +700,7 @@ void MainWindow::applyOptions(const RsyncOptions &o)
     m_bwLimitEdit->setText(o.bwLimit);
     m_remoteShellCheck->setChecked(o.useRemoteShell);
     m_remoteShellEdit->setText(o.remoteShell);
+    m_sshKeyEdit->setText(o.sshKey);
     m_excludeEdit->setText(o.excludeFile);
     m_contentsCheck->setChecked(o.contentsOnly);
     m_deleteCheck->setChecked(o.deleteExtraneous);
@@ -1057,6 +1073,20 @@ void MainWindow::browseProgram()
     const QString file = QFileDialog::getOpenFileName(this, tr("Select the rsync program"), QStringLiteral("/usr/bin"));
     if (!file.isEmpty())
         m_programCombo->setCurrentText(file);
+}
+
+void MainWindow::browseSshKey()
+{
+    QString start = QFileInfo(m_sshKeyEdit->text().trimmed()).absolutePath();
+    if (start.isEmpty() || !QFileInfo(start).isDir())
+        start = QDir::homePath() + QStringLiteral("/.ssh");
+    if (!QFileInfo(start).isDir())
+        start = QDir::homePath();
+    const QStringList files = FileDialog::openFiles(this, tr("Select the SSH private key"), start,
+                                                    FileDialog::Kind::Preferred,
+                                                    QFileDialog::DontResolveSymlinks);
+    if (!files.isEmpty())
+        m_sshKeyEdit->setText(files.first());
 }
 
 void MainWindow::browseExcludeFile()

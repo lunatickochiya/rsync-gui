@@ -56,6 +56,7 @@ struct RsyncOptions
     QString bwLimit;
     bool useRemoteShell = false; // -e
     QString remoteShell;
+    QString sshKey;            // -i <key> in the ssh command
     QString excludeFile;       // --exclude-from=<file>, read by the local rsync
     QString extraArguments;    // split like a shell command line
     // Whether the window sets modifyWindow for FAT destinations (off: never added automatically).

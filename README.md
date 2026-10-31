@@ -23,8 +23,8 @@ be passed as additional arguments.
   `-D`, e.g. `-rlt`), `-H`, `-A`, `-X`, `-v`, `-h`, `--partial`,
   `--progress` / `--info=progress2`, `-c`, `-u`, `--ignore-existing`, `-z`, `--bwlimit`, `-e`,
   `--delete`, `--remove-source-files`, `-n`, copying directory contents (trailing `/`) and a field for
-  **any other arguments** (e.g. `--exclude='*.tmp' --mkpath`) and an **exclude file** chooser
-  (`--exclude-from`),
+  **any other arguments** (e.g. `--exclude='*.tmp' --mkpath`), an **exclude file** chooser
+  (`--exclude-from`) and an **SSH key** field (`-i`),
 - **verification after copying**: a second rsync pass that compares checksums of the source and the
   destination and lists every file that differs or is missing,
 - preview of the generated command, progress bar (per file or overall) with a live **speed graph**
@@ -327,6 +327,7 @@ the list, presets are not listed there (they have *Load preset*).
         "program": "rsync",
         "bwLimit": "",
         "remoteShell": "",
+        "sshKey": "/home/user/.ssh/id_ed25519",
         "excludeFile": "/home/user/rsync-excludes.txt",
         "extraArguments": "--exclude='*.tmp'",
         "archive": true,
@@ -365,6 +366,7 @@ the list, presets are not listed there (they have *Load preset*).
 - `existing`: `replace`, `skip-newer` (`-u`), `ignore-existing` (`--ignore-existing`),
 - `recursive`, `links`, `perms`, `times`, `group`, `owner`, `devices` (`-rlptgoD`) are used only
   when `archive` is false (`-a` implies them all),
+- `sshKey` — private SSH key passed to ssh with `-i` for remote locations,
 - `excludeFile` — path to a local file with one rsync exclude pattern per line (`--exclude-from`);
   it is also passed to the verification pass,
 - `extraArguments` is split like a shell command line (quotes and backslashes),
