@@ -1118,10 +1118,11 @@ function openBrowser(mode, onPick, options = {}) {
       const pick = el('button', 'btn primary', mode === 'dest' ? '选择当前目录' : '添加当前目录');
       pick.type = 'button';
       const chooseCurrent = () => {
-        if (!browse.data) return;
-        const path = browse.data.path;
+        const path = (pathInput.value || '').trim() || (browse.data && browse.data.path);
+        if (!path) return;
+        const onPick = browse.onPick;
         closeModal();
-        browse.onPick(path);
+        onPick(path);
       };
       pick.addEventListener('click', chooseCurrent);
       bar.append(up, home, cancel, pick);
@@ -1148,8 +1149,9 @@ function openBrowser(mode, onPick, options = {}) {
             if (entry.dir) {
               loadBrowse(entry.path);
             } else if (browse.mode === 'source') {
+              const onPick = browse.onPick;
               closeModal();
-              browse.onPick(entry.path);
+              onPick(entry.path);
             } else {
               toast('目标必须是目录', true);
             }
