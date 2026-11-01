@@ -24,7 +24,7 @@ jobs:
       gui_version: ${{ steps.meta.outputs.gui_version }}
       tui_version: ${{ steps.meta.outputs.tui_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read version and branch layout
         id: meta
@@ -69,7 +69,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -103,7 +103,7 @@ jobs:
           ls -lh dist
 
       - name: Upload GUI packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rsync-gui-linux-amd64
           path: dist/*
@@ -124,10 +124,10 @@ jobs:
           - { goos: darwin, goarch: arm64 }
           - { goos: windows, goarch: amd64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: tui/go.mod
           cache-dependency-path: tui/go.sum
@@ -171,7 +171,7 @@ jobs:
           ls -lh
 
       - name: Upload TUI binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rsync-tui-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: rsync-*
