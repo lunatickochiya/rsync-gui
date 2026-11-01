@@ -152,7 +152,7 @@ func (s *Server) handleAssets(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Header().Set("Cache-Control", "no-cache")
 	http.StripPrefix("/assets/", http.FileServer(http.FS(s.assets))).ServeHTTP(w, r)
 }
 
