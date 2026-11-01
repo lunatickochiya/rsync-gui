@@ -2,6 +2,9 @@
 
 ## Done
 
+- [x] OpenCode-CLI-style terminal front-end in `tui/` (Go + Bubble Tea, WSL-friendly):
+      dark OpenCode-style UI, source/destination panes, option list, presets, progress/speed/ETA,
+      verification, verified moves, Git-tracked files, JSON import/export, cancellation
 - [x] Git repository (user `fapped`), MIT license
 - [x] CMake + Qt 6 Widgets, `rsynccore` library, QtTest tests (`ctest`)
 - [x] Source list: local paths, `file://`, `sftp://` (with user and port), `user@host:path`;

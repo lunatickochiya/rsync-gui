@@ -9,6 +9,17 @@
 >
 > ![中文界面](docs/screenshots/rsync-gui-zh.png)
 
+> **终端版（TUI）**：本分支新增了 [`tui/`](tui/README.md) —— 把界面改造成
+> **OpenCode CLI 风格** 的全屏终端应用，纯 Go、无需 Qt/WSLg，可直接在 WSL 里使用。
+>
+> ```bash
+> cd tui && make && make install
+> rsync-tui ~/Photos -d /mnt/d/backup
+> ```
+>
+> 支持复制/校验/移动、预设、进度与速度曲线、Git 跟踪文件、JSON 设置导入导出等功能。
+> 详见 [tui/README.md](tui/README.md)。
+
 > 本中文版在源码中加入了 `translations/rsync-gui_zh_CN.ts` 和编译好的
 > `translations/rsync-gui_zh_CN.qm`，并在启动时自动加载。
 

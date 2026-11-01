@@ -4,6 +4,10 @@
 >
 > 简体中文版说明与安装方法：[README.zh-CN.md](README.zh-CN.md)
 
+> **Terminal edition (TUI):** this branch adds [`tui/`](tui/README.md), an
+> **OpenCode-CLI-style** full-screen terminal front-end. Pure Go, no Qt/WSLg,
+> works natively in WSL. See [tui/README.md](tui/README.md) (Chinese).
+
 > **Created with AI.** The source code, tests and documentation of this project were written by an
 > AI model — Claude (Anthropic) in Claude Code — following the author's requirements and decisions.
 > The author directed the work and tested the application; the AI wrote the code and ran the automated
