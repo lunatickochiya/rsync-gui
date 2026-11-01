@@ -9,6 +9,15 @@
 >
 > ![中文界面](docs/screenshots/rsync-gui-zh.png)
 
+> **网页版（本分支）**：新增 [`web/`](web/README.md)，本地启动 Go 服务，用浏览器从远端操作。
+>
+> ```bash
+> cd web && make && ./bin/rsync-web
+> ```
+>
+> 默认监听 `127.0.0.1:8787`；绑定 `0.0.0.0` 时会自动生成访问令牌。支持预设、
+> 命令预览、进度/日志、SSE、取消、文件浏览和会删除文件时的二次确认。
+
 > 本中文版在源码中加入了 `translations/rsync-gui_zh_CN.ts` 和编译好的
 > `translations/rsync-gui_zh_CN.qm`，并在启动时自动加载。
 

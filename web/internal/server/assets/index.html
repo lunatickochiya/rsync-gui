@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>rsync web · 传输面板</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <span class="brand-name">rsync <em>web</em></span>
+      <span class="brand-sub">浏览器传输面板</span>
+    </div>
+    <div class="topbar-right">
+      <span id="security-badge" class="pill">本机</span>
+      <span id="rsync-version" class="meta">检测 rsync…</span>
+      <span id="conn" class="conn offline"><i></i><span>未连接</span></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="card">
+        <div class="card-head">
+          <h2>源</h2>
+          <span id="source-count" class="count">0</span>
+        </div>
+        <div id="source-list" class="source-list">
+          <div class="empty">还没有添加源</div>
+        </div>
+        <div class="row-buttons">
+          <button class="btn" id="add-source" type="button">＋ 添加源</button>
+          <button class="btn ghost" id="bulk-source" type="button">批量</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>目标</h2>
+          <button class="link" id="recent-dest" type="button">最近</button>
+        </div>
+        <div id="dest-value" class="dest"><span class="muted">尚未选择目标</span></div>
+        <button class="btn wide" id="edit-dest" type="button">选择目标目录</button>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>预设</h2>
+          <span class="muted small">一键切换</span>
+        </div>
+        <div id="preset-list" class="preset-list"></div>
+      </section>
+
+      <section class="card tips">
+        <div class="tip-title">◆ 小提示</div>
+        <p>服务运行在本机，网页只负责发指令。远程访问建议使用 SSH 隧道。</p>
+        <div class="footer-actions">
+          <button class="link" id="import-settings" type="button">导入设置</button>
+          <button class="link" id="export-settings" type="button">导出设置</button>
+          <button class="link" id="help-button" type="button">帮助 ?</button>
+        </div>
+        <input type="file" id="settings-file" accept=".json,application/json" hidden>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div id="setup-view" class="view">
+        <div class="setup-head">
+          <div>
+            <div class="eyebrow">传输设置</div>
+            <h1 id="mode-title">复制文件</h1>
+            <p class="lede" id="mode-desc">选择源和目标，调整选项，然后开始传输。</p>
+          </div>
+          <div class="quick-stats">
+            <div><span id="stat-sources">0</span><small>源</small></div>
+            <div><span id="stat-options">0</span><small>已启用选项</small></div>
+          </div>
+        </div>
+
+        <div id="options" class="options"></div>
+
+        <div class="card command-card">
+          <div class="card-head">
+            <h2>命令预览</h2>
+            <div class="head-actions">
+              <span id="command-state" class="muted small"></span>
+              <button class="link" id="copy-command" type="button">复制</button>
+            </div>
+          </div>
+          <pre id="command-preview" class="command">填写源和目标后显示 rsync 命令。</pre>
+          <div id="warnings" class="warnings"></div>
+        </div>
+
+        <div class="actionbar">
+          <div id="plan-status" class="plan-status">准备就绪</div>
+          <button id="start-button" class="btn primary big" type="button">开始传输 <kbd>r</kbd></button>
+        </div>
+      </div>
+
+      <div id="run-view" class="view hidden">
+        <div class="run-top">
+          <div>
+            <div class="eyebrow" id="run-phase">复制</div>
+            <h1 id="run-title">正在传输</h1>
+          </div>
+          <div class="run-clock" id="run-clock">00:00</div>
+        </div>
+        <div class="progress-wrap"><div id="progress-fill" class="progress-fill"></div></div>
+        <div class="run-stats">
+          <div><span id="run-percent">0%</span><small>进度</small></div>
+          <div><span id="run-rate">—</span><small>速度</small></div>
+          <div><span id="run-eta">—</span><small>剩余</small></div>
+          <div><span id="run-transferred">—</span><small>已传输</small></div>
+          <div><span id="run-files">—</span><small>文件</small></div>
+        </div>
+        <div class="run-current" id="run-current">等待 rsync…</div>
+        <div class="run-actions">
+          <button id="cancel-button" class="btn danger" type="button">取消传输</button>
+          <button id="back-button" class="btn ghost hidden" type="button">返回设置</button>
+          <button id="rerun-button" class="btn hidden" type="button">再次运行</button>
+        </div>
+        <section class="card log-card">
+          <div class="card-head">
+            <h2>日志</h2>
+            <div class="head-actions">
+              <span id="log-count" class="muted small">0 行</span>
+              <label class="check inline"><input type="checkbox" id="follow-log" checked><span>跟随</span></label>
+            </div>
+          </div>
+          <div id="log-list" class="logs"></div>
+        </section>
+        <div id="summary" class="summary hidden"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal-root" class="modal-root hidden" aria-hidden="true"></div>
+<script src="/assets/app.js"></script>
+</body>
+</html>

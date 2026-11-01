@@ -4,6 +4,16 @@
 >
 > 简体中文版说明与安装方法：[README.zh-CN.md](README.zh-CN.md)
 
+> **Web version (this branch):** [`web/`](web/README.md) serves the transfer panel in a browser.
+>
+> ```bash
+> cd web && make && ./bin/rsync-web
+> ```
+>
+> It listens on `127.0.0.1:8787` by default and generates an access token when bound to a
+> non-loopback address. Presets, command preview, live progress/logs over SSE, cancel,
+> local file browsing and destructive-action confirmation are included.
+
 > **Created with AI.** The source code, tests and documentation of this project were written by an
 > AI model — Claude (Anthropic) in Claude Code — following the author's requirements and decisions.
 > The author directed the work and tested the application; the AI wrote the code and ran the automated
