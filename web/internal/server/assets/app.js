@@ -191,10 +191,23 @@ function bindEvents() {
       return;
     }
     if (isTyping(event.target) || !els.modalRoot.classList.contains('hidden')) return;
-    if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      if (!els.setupView.classList.contains('hidden')) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (!els.setupView.classList.contains('hidden')) {
+      if (event.key === 'r' || event.key === 'R') {
         event.preventDefault();
         startJob(false);
+      } else if (event.key === 'a') {
+        event.preventDefault();
+        openAddSource();
+      } else if (event.key === 'A') {
+        event.preventDefault();
+        openBulkSource();
+      } else if (event.key === 'd') {
+        event.preventDefault();
+        openDestination();
+      } else if (event.key === 'p') {
+        event.preventDefault();
+        openPresetPicker();
       }
     }
     if (event.key === '?') {
@@ -338,6 +351,32 @@ function renderPresets() {
 function updatePresetHighlight() {
   $$('.preset', els.presetList).forEach((button) => {
     button.classList.toggle('active', button.dataset.id === state.activePreset || (!state.activePreset && !button.dataset.id));
+  });
+}
+
+function openPresetPicker() {
+  const body = el('div', 'preset-list');
+  for (const preset of state.presets) {
+    const button = el('button', 'preset' + (preset.id === state.activePreset ? ' active' : ''));
+    button.type = 'button';
+    button.disabled = !!preset.error;
+    button.append(el('span', '', preset.label || preset.name || preset.id), el('code', '', preset.id));
+    button.addEventListener('click', () => {
+      applyPreset(preset);
+      closeModal();
+    });
+    body.append(button);
+  }
+  openModal({
+    title: '选择预设',
+    subtitle: '预设会替换传输选项，但保留程序、SSH、排除文件和附加参数。',
+    body,
+    footer: (bar) => {
+      const close = el('button', 'btn ghost', '取消');
+      close.type = 'button';
+      close.addEventListener('click', closeModal);
+      bar.append(close);
+    }
   });
 }
 
