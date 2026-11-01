@@ -12,7 +12,8 @@
 >
 > It listens on `127.0.0.1:8787` by default and generates an access token when bound to a
 > non-loopback address. Presets, command preview, live progress/logs over SSE, cancel,
-> local file browsing and destructive-action confirmation are included.
+> local file browsing and destructive-action confirmation are included. On WSL2, run
+> `rsync-web --wsl` and open `http://localhost:8787` from the Windows host.
 
 > **Created with AI.** The source code, tests and documentation of this project were written by an
 > AI model — Claude (Anthropic) in Claude Code — following the author's requirements and decisions.

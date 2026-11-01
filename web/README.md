@@ -47,10 +47,30 @@ rsync-web
 
 ```bash
 rsync-web --listen 127.0.0.1:8787
+rsync-web --wsl                          # WSL 主机访问模式
 rsync-web --listen 0.0.0.0:8787          # 自动生成访问令牌
 rsync-web --listen 0.0.0.0:8787 --token my-secret
 rsync-web --version
 ```
+
+## WSL 主机访问
+
+在 WSL2 里直接运行，Windows 主机通常可以用 `localhost` 访问：
+
+```bash
+rsync-web --wsl
+# Windows 浏览器打开启动时打印的：
+# http://localhost:8787/?token=...
+```
+
+`--wsl` 会强制监听所有网卡，并同时打印：
+
+- `Windows 主机 http://localhost:8787/?token=...`
+- `WSL 网卡 http://192.168.x.x:8787/?token=...`
+
+> 不要使用 `/etc/resolv.conf` 里的 `10.255.255.254`：它通常是 WSL 的 DNS 代理地址，
+> 不在 WSL 业务网卡上，Windows 主机访问不到。以启动时打印的 `localhost` 或
+> `WSL 网卡` 地址为准。
 
 ## 远端访问
 
