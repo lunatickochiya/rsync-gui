@@ -1,3 +1,3 @@
 bin/
-rsync-tui
+/rsync-tui
 *.test
