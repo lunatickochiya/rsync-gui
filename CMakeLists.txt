@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(rsync-gui VERSION 0.1.0 LANGUAGES CXX)
+set(RSYNC_GUI_VERSION "0.1.0" CACHE STRING "Application version")
+project(rsync-gui VERSION ${RSYNC_GUI_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -92,3 +93,23 @@ if(BUILD_TESTING)
         RSYNC_GUI_SOURCE_SERVICEMENU="${CMAKE_CURRENT_SOURCE_DIR}/packaging/servicemenus/rsync-gui.desktop.in")
     add_test(NAME tst_rsynccore COMMAND tst_rsynccore)
 endif()
+
+# Production packages: `cpack -G DEB` and `cpack -G TGZ` after building.
+set(CPACK_PACKAGE_NAME "rsync-gui")
+set(CPACK_PACKAGE_VENDOR "lunatickochiya")
+set(CPACK_PACKAGE_CONTACT "lunatickochiya <lunatickochiya@users.noreply.github.com>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Qt 6 front-end for rsync (Simplified Chinese)")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "rsync-gui-${PROJECT_VERSION}-linux-x86_64")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_GENERATOR "DEB;TGZ")
+
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "lunatickochiya <lunatickochiya@users.noreply.github.com>")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "rsync")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "openssh-client")
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+
+include(CPack)

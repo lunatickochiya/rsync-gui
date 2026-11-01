@@ -1,0 +1,213 @@
+name: Production
+
+on:
+  push:
+    branches: [main, tui]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, tui]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  prepare:
+    name: Version and layout
+    runs-on: ubuntu-24.04
+    outputs:
+      has_tui: ${{ steps.meta.outputs.has_tui }}
+      gui_version: ${{ steps.meta.outputs.gui_version }}
+      tui_version: ${{ steps.meta.outputs.tui_version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read version and branch layout
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          has_tui=false
+          if [ -f tui/go.mod ]; then
+            has_tui=true
+          fi
+
+          gui_version="0.1.0"
+          tui_version="0.2.0-dev.${GITHUB_RUN_NUMBER}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF_NAME#v}"
+            if [[ "${tag}" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+              gui_version="${tag}"
+              tui_version="${tag}"
+            else
+              echo "::warning::Tag ${GITHUB_REF_NAME} is not a numeric version; using development versions"
+            fi
+          fi
+
+          {
+            echo "has_tui=${has_tui}"
+            echo "gui_version=${gui_version}"
+            echo "tui_version=${tui_version}"
+          } >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "### Production build"
+            echo ""
+            echo "- TUI present: \`${has_tui}\`"
+            echo "- GUI version: \`${gui_version}\`"
+            echo "- TUI version: \`${tui_version}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  gui:
+    name: Qt GUI (Linux)
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build dpkg-dev rsync \
+            qt6-base-dev qt6-base-dev-tools qt6-translations-l10n \
+            libgl1-mesa-dev
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DRSYNC_GUI_VERSION="${{ needs.prepare.outputs.gui_version }}"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package .deb and tar.gz
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cpack --config build/CPackConfig.cmake -G DEB -B dist
+          cpack --config build/CPackConfig.cmake -G TGZ -B dist
+          ls -lh dist
+
+      - name: Upload GUI packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: rsync-gui-linux-amd64
+          path: dist/*
+          if-no-files-found: error
+
+  tui:
+    name: TUI (${{ matrix.goos }}/${{ matrix.goarch }})
+    needs: prepare
+    if: needs.prepare.outputs.has_tui == 'true'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: tui/go.mod
+          cache-dependency-path: tui/go.sum
+
+      - name: Test and vet
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        working-directory: tui
+        run: |
+          go test ./...
+          go vet ./...
+
+      - name: Build and archive
+        working-directory: tui
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          VERSION: ${{ needs.prepare.outputs.tui_version }}
+        run: |
+          set -euo pipefail
+
+          name="rsync-tui-${VERSION}-${GOOS}-${GOARCH}"
+          mkdir -p ../dist
+          binary="../dist/${name}"
+          if [ "${GOOS}" = "windows" ]; then
+            binary="${binary}.exe"
+          fi
+
+          go build -trimpath \
+            -ldflags "-s -w -X main.version=${VERSION}" \
+            -o "${binary}" ./cmd/rsync-tui
+
+          cd ../dist
+          if [ "${GOOS}" = "windows" ]; then
+            zip -q "${name}.zip" "${name}.exe"
+            rm "${name}.exe"
+          else
+            tar -czf "${name}.tar.gz" "${name}"
+            rm "${name}"
+          fi
+          ls -lh
+
+      - name: Upload TUI binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: rsync-tui-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: >-
+      startsWith(github.ref, 'refs/tags/') &&
+      needs.gui.result == 'success' &&
+      (needs.tui.result == 'success' || needs.tui.result == 'skipped')
+    needs: [prepare, gui, tui]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          pattern: rsync-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' \
+            | sort \
+            | xargs -r sha256sum > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" >/dev/null 2>&1 \
+            || gh release create "$tag" --title "$tag" --generate-notes
+          gh release upload "$tag" dist/* --clobber
