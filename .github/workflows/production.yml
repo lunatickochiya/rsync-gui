@@ -2,10 +2,10 @@ name: Production
 
 on:
   push:
-    branches: [main, tui]
+    branches: [main, tui, web]
     tags: ["v*"]
   pull_request:
-    branches: [main, tui]
+    branches: [main, tui, web]
   workflow_dispatch:
 
 permissions:
