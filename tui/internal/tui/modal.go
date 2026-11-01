@@ -121,22 +121,7 @@ func (m *Model) handleConfirmKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.modal = modalState{}
 	case "enter", "y":
-		action := m.modal.action
-		m.modal = modalState{}
-		switch action {
-		case "start-plan":
-			if m.pendingPlan != nil {
-				return m, m.startPlan(m.pendingPlan)
-			}
-		case "cancel-run":
-			m.cancelRun()
-		case "clear-sources":
-			m.sources = nil
-			m.sourceCursor = 0
-			m.setToast("源列表已清空", false)
-		case "reset-options":
-			m.resetOptions()
-		}
+		return m, m.executeConfirm()
 	}
 	return m, nil
 }

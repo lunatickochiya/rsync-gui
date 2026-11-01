@@ -22,6 +22,7 @@ func (m *Model) View() string {
 	if m.width <= 0 || m.height <= 0 {
 		return "rsync tui"
 	}
+	m.hits = uiHits{}
 	if m.width < 66 || m.height < 18 {
 		msg := styMuted.Render("终端太小") + "\n\n" +
 			styText.Render(fmt.Sprintf("当前 %d×%d，至少需要 66×18。", m.width, m.height)) + "\n" +
@@ -168,7 +169,7 @@ func (m *Model) renderSetup() string {
 	gap := 1
 	mainW := m.width - sidebarW - gap
 	sidebar := m.renderSidebar(sidebarW, bodyH)
-	main := m.renderMain(mainW, bodyH)
+	main := m.renderMain(sidebarW+gap, mainW, bodyH)
 	bodyLines := strings.Split(sidebar, "\n")
 	mainLines := strings.Split(main, "\n")
 	var joined []string
@@ -201,9 +202,11 @@ func (m *Model) renderSidebar(width, height int) string {
 	}
 	lines = append(lines, lipgloss.NewStyle().Foreground(titleColor).Bold(true).Render("源")+
 		styFaint.Render(fmt.Sprintf("  %d", len(m.sources))))
+	m.hits.sourceTitle = hitRect{0, bodyTop + len(lines) - 1, width, 1}
 
 	presetBlock := 4
 	listHeight := max(1, height-len(lines)-presetBlock-1)
+	listStart := len(lines)
 	if len(m.sources) == 0 {
 		lines = append(lines, styFaint.Render("  还没有源"))
 		if listHeight > 1 {
@@ -218,15 +221,19 @@ func (m *Model) renderSidebar(width, height int) string {
 				continue
 			}
 			selected := idx == m.sourceCursor && m.focus == focusSources
+			m.hits.sourceRows = append(m.hits.sourceRows, hitRow{rect: hitRect{0, bodyTop + len(lines), width, 1}, index: idx})
 			lines = append(lines, m.renderSourceRow(idx, width, selected))
 		}
 	}
+	m.hits.sourceArea = hitRect{0, bodyTop + listStart, width, listHeight}
+	m.hits.addSource = hitRect{0, bodyTop + len(lines), width, 1}
 	lines = append(lines, "  "+keycap("a")+" "+styMuted.Render("添加源")+"  "+keycap("A")+" "+styMuted.Render("批量"))
 
 	for len(lines) < height-presetBlock {
 		lines = append(lines, "")
 	}
 	lines = append(lines, "")
+	presetY := bodyTop + len(lines)
 	lines = append(lines, styMuted.Bold(true).Render("预设"))
 	presetLabel := "自定义"
 	if m.activePreset != "" {
@@ -236,6 +243,7 @@ func (m *Model) renderSidebar(width, height int) string {
 	}
 	lines = append(lines, "  "+truncate(presetLabel, width-4))
 	lines = append(lines, "  "+hint("p", "选择预设"))
+	m.hits.presetBlock = hitRect{0, presetY, width, 3}
 	if len(lines) > height {
 		lines = lines[:height]
 	}
@@ -295,7 +303,7 @@ func displayPathShort(path string) string {
 	return path
 }
 
-func (m *Model) renderMain(width, height int) string {
+func (m *Model) renderMain(x, width, height int) string {
 	lines := make([]string, 0, height)
 	// Title line.
 	modeColor := cGreen
@@ -321,10 +329,13 @@ func (m *Model) renderMain(width, height int) string {
 		titleLeft = truncate(titleLeft, max(0, width-lipgloss.Width(right)-1))
 		gap = max(1, width-lipgloss.Width(titleLeft)-lipgloss.Width(right))
 	}
+	m.hits.mainPreset = hitRect{x + width - lipgloss.Width(right), bodyTop, lipgloss.Width(right), 1}
 	lines = append(lines, titleLeft+strings.Repeat(" ", gap)+right)
 
 	// Destination box.
+	destY := bodyTop + len(lines)
 	lines = append(lines, m.renderDest(width)...)
+	m.hits.dest = hitRect{x, destY, width, 3}
 	lines = append(lines, "")
 
 	// Options title.
@@ -352,16 +363,23 @@ func (m *Model) renderMain(width, height int) string {
 
 	listHeight := max(1, height-8)
 	m.clampOptionScroll(listHeight)
+	listStart := len(lines)
 	for i := 0; i < listHeight; i++ {
 		idx := m.optionScroll + i
 		if idx >= len(rows) {
 			lines = append(lines, "")
 			continue
 		}
+		if rows[idx].kind != rowHeader {
+			m.hits.optionRows = append(m.hits.optionRows, hitRow{rect: hitRect{x, bodyTop + len(lines), width, 1}, index: idx})
+		}
 		lines = append(lines, m.renderOptionRow(rows[idx], idx, width))
 	}
+	m.hits.optionArea = hitRect{x, bodyTop + listStart, width, listHeight}
 	// Command preview.
 	cmd := m.previewCommand()
+	cmdY := bodyTop + len(lines)
+	m.hits.command = hitRect{x, cmdY, width, 1}
 	lines = append(lines, "  "+styFaint.Render("命令 ")+hint("v", "查看")+"  "+truncateMiddle(cmd, max(1, width-18)))
 	if len(lines) > height {
 		lines = lines[:height]

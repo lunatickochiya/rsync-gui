@@ -90,6 +90,7 @@ type Model struct {
 	cfg     config.AppConfig
 
 	modal       modalState
+	hits        uiHits
 	input       textinput.Model
 	bulk        textarea.Model
 	pendingPlan *rsync.Plan
@@ -213,6 +214,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.log(rsync.LevelError, "传输进程意外结束。")
 		}
 		return m, nil
+	case tea.MouseMsg:
+		return m.handleMouse(msg)
 	case tea.KeyMsg:
 		if m.modal.kind != modalNone {
 			return m.handleModalKey(msg)

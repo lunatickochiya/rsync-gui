@@ -45,6 +45,21 @@ func (m *Model) renderModal() string {
 		Padding(1, 2).
 		Width(maxW - 6).
 		Render(content)
+	boxW, boxH := lipgloss.Width(box), lipgloss.Height(box)
+	boxX := max(0, (m.width-boxW)/2)
+	boxY := max(0, (m.height-boxH)/2)
+	m.hits.modalBox = hitRect{boxX, boxY, boxW, boxH}
+	contentX, contentY := boxX+3, boxY+2
+	if m.hits.confirmLine > 0 {
+		label := m.modal.confirmLabel
+		if label == "" {
+			label = "确定"
+		}
+		labelW := lipgloss.Width(label) + 2
+		y := contentY + m.hits.confirmLine
+		m.hits.confirmNo = hitRect{contentX + 2, y, 12, 1}
+		m.hits.confirmYes = hitRect{contentX + 2 + 12 + 5, y, labelW, 1}
+	}
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box,
 		lipgloss.WithWhitespaceBackground(cBg))
 }
@@ -80,6 +95,8 @@ func (m *Model) inputModal(width int) (string, string) {
 			} else {
 				line = styMuted.Render(line)
 			}
+			lineIdx := strings.Count(body, "\n") + 1
+			m.hits.inputCandidates = append(m.hits.inputCandidates, inputHit{line: lineIdx, value: m.completions[i]})
 			body += "\n  " + line
 		}
 		if len(m.completions) > maxShow {
@@ -107,6 +124,8 @@ func (m *Model) inputModal(width int) (string, string) {
 				} else {
 					line = styMuted.Render(line)
 				}
+				lineIdx := strings.Count(body, "\n") + 1
+				m.hits.inputRecents = append(m.hits.inputRecents, inputHit{line: lineIdx, value: recents[i]})
 				body += "\n  " + line
 			}
 		}
@@ -159,6 +178,8 @@ func (m *Model) presetModal(width int) (string, string) {
 		}
 		right := styFaint.Render(tag) + " "
 		gap := max(1, width-lipgloss.Width(bar)-lipgloss.Width(label)-lipgloss.Width(right)-4)
+		itemLine := strings.Count(body, "\n") + 1
+		m.hits.presetItemLines = append(m.hits.presetItemLines, itemLine)
 		body += "\n" + bar + labelStyle.Render(label) + strings.Repeat(" ", gap) + right
 		detail := p.ID
 		if p.Error != "" {
@@ -187,6 +208,7 @@ func (m *Model) confirmModal(width int) (string, string) {
 		body += "\n\n" + strings.Join(wrapText(m.modal.body, width-2), "\n")
 	}
 	body += "\n\n"
+	m.hits.confirmLine = strings.Count(body, "\n")
 	label := m.modal.confirmLabel
 	if label == "" {
 		label = "确定"
@@ -201,7 +223,7 @@ func (m *Model) helpModal(width int) (string, string) {
 	visible := max(4, m.height-14)
 	m.modal.scroll = clamp(m.modal.scroll, 0, max(0, len(lines)-visible))
 	end := min(len(lines), m.modal.scroll+visible)
-	body := m.modalTitle(m.modal.title, "全部操作都可以只用键盘完成")
+	body := m.modalTitle(m.modal.title, "全部操作都可以只用键盘完成；也可以点击和滚轮操作")
 	body += "\n\n" + strings.Join(lines[m.modal.scroll:end], "\n")
 	return body, "↑↓ 滚动 · esc 关闭"
 }
@@ -222,6 +244,7 @@ func helpLines() []string {
 	item("s / o", "直接跳到源 / 选项")
 	item("↑↓ j k", "移动光标；pgup/pgdown 翻页")
 	item("?", "打开这个帮助")
+	item("mouse", "点击源/选项/目标/预设；滚轮滚动")
 	item("q", "退出（运行中请先取消）")
 	section("源与目标")
 	item("a", "添加一个源（支持远程路径）")
