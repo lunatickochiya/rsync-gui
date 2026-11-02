@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -27,6 +29,34 @@ func TestAccessLinesNonWSL(t *testing.T) {
 	}
 	if !strings.Contains(joined, "http://127.0.0.1:8787/") {
 		t.Fatalf("non-WSL access lines missing loopback URL:\n%s", joined)
+	}
+}
+
+func TestWithEnvReplacesExisting(t *testing.T) {
+	env := withEnv([]string{"A=1", "X=old", "B=2"}, "X", "new")
+	joined := strings.Join(env, "\n")
+	if strings.Contains(joined, "X=old") || !strings.Contains(joined, "X=new") {
+		t.Fatalf("withEnv() = %v", env)
+	}
+	if !strings.Contains(joined, "A=1") || !strings.Contains(joined, "B=2") {
+		t.Fatalf("withEnv() dropped unrelated values: %v", env)
+	}
+}
+
+func TestDefaultBackgroundPaths(t *testing.T) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := defaultPIDFile("8787"), filepath.Join(configDir, "rsync-web", "rsync-web-8787.pid"); got != want {
+		t.Fatalf("defaultPIDFile() = %q, want %q", got, want)
+	}
+	if got, want := defaultLogFile("8787"), filepath.Join(cacheDir, "rsync-web", "rsync-web-8787.log"); got != want {
+		t.Fatalf("defaultLogFile() = %q, want %q", got, want)
 	}
 }
 

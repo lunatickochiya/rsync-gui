@@ -133,7 +133,7 @@ button { cursor: pointer; }
 .source-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow: auto; }
 .source-row {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 24px;
+  grid-template-columns: 22px minmax(0, 1fr) 24px 24px;
   gap: 8px;
   align-items: center;
   padding: 8px 9px;
@@ -144,10 +144,12 @@ button { cursor: pointer; }
 .source-row:hover { border-color: var(--border); }
 .source-ico { color: var(--accent); font: 600 11px/1 var(--mono); text-align: center; }
 .source-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font: 12px/1.4 var(--mono); }
-.source-remove { border: 0; background: transparent; color: var(--faint); font-size: 15px; line-height: 1; padding: 2px; }
+.source-edit, .source-remove { border: 0; background: transparent; color: var(--faint); font-size: 15px; line-height: 1; padding: 2px; }
+.source-edit:hover { color: var(--accent); }
 .source-remove:hover { color: var(--red); }
 .empty { padding: 18px 8px; color: var(--faint); font-size: 12px; text-align: center; border: 1px dashed var(--border); border-radius: 9px; }
-.dest { min-height: 34px; display: flex; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface-2); font: 12px/1.5 var(--mono); word-break: break-all; }
+.dest { min-height: 34px; display: flex; align-items: center; padding: 8px 10px; border: 1px solid transparent; border-radius: 9px; background: var(--surface-2); font: 12px/1.5 var(--mono); word-break: break-all; cursor: pointer; }
+.dest:hover, .dest:focus-visible { border-color: var(--border); outline: none; }
 .preset-list { display: flex; flex-direction: column; gap: 5px; }
 .preset {
   display: flex;

@@ -152,6 +152,8 @@ function init() {
     settingsFile: $('#settings-file')
   };
 
+  els.destValue.tabIndex = 0;
+  els.destValue.setAttribute('role', 'button');
   bindEvents();
   loadBootstrap();
   setInterval(updateClock, 1000);
@@ -162,6 +164,13 @@ function bindEvents() {
   $('#bulk-source').addEventListener('click', openBulkSource);
   $('#edit-dest').addEventListener('click', openDestination);
   $('#recent-dest').addEventListener('click', openDestination);
+  els.destValue.addEventListener('click', openDestination);
+  els.destValue.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openDestination();
+    }
+  });
   $('#import-settings').addEventListener('click', () => els.settingsFile.click());
   $('#export-settings').addEventListener('click', exportSettings);
   $('#help-button').addEventListener('click', openHelp);
@@ -298,6 +307,11 @@ function renderSources() {
     const icon = el('span', 'source-ico', isRemote(source) ? 'SSH' : 'DIR');
     const path = el('span', 'source-path', source);
     path.title = source;
+    const edit = el('button', 'source-edit', '✎');
+    edit.type = 'button';
+    edit.title = '编辑这个源';
+    edit.setAttribute('aria-label', '编辑源 ' + source);
+    edit.addEventListener('click', () => openEditSource(index));
     const remove = el('button', 'source-remove', '×');
     remove.type = 'button';
     remove.title = '移除这个源';
@@ -307,7 +321,7 @@ function renderSources() {
       updateMeta();
       schedulePlan();
     });
-    row.append(icon, path, remove);
+    row.append(icon, path, edit, remove);
     els.sourceList.append(row);
   });
 }
@@ -316,10 +330,12 @@ function renderDestination() {
   els.destValue.replaceChildren();
   if (!state.destination) {
     els.destValue.append(el('span', 'muted', '尚未选择目标'));
+    els.destValue.title = '点击设置目标目录';
     return;
   }
   const span = el('span', '', state.destination);
   span.title = state.destination;
+  els.destValue.title = '点击编辑目标目录';
   els.destValue.append(span);
 }
 
@@ -972,6 +988,65 @@ function openAddSource() {
   return footer;
 }
 
+function openEditSource(index) {
+  const current = state.sources[index];
+  if (current === undefined) return;
+  const body = el('div');
+  const field = el('div', 'field');
+  field.append(el('label', '', '源地址'));
+  const row = el('div', 'field-row');
+  const input = el('input');
+  input.type = 'text';
+  input.value = current;
+  input.placeholder = '/home/me/Photos 或 user@nas:/volume1/photos';
+  const browseButton = el('button', 'btn ghost', '浏览本机');
+  browseButton.type = 'button';
+  browseButton.addEventListener('click', () => {
+    closeModal();
+    openBrowser('source', (picked) => applySourceEdit(index, picked), { edit: true });
+  });
+  row.append(input, browseButton);
+  field.append(row, el('div', 'hint', '支持本地路径、user@host:/path 和 sftp://user@host:port/path。修改后会自动重新生成命令。'));
+  body.append(field);
+
+  openModal({
+    title: '编辑源',
+    subtitle: '修改这个源的地址。',
+    body,
+    footer: (bar) => {
+      const cancel = el('button', 'btn ghost', '取消');
+      cancel.type = 'button';
+      cancel.addEventListener('click', closeModal);
+      const save = el('button', 'btn primary', '保存');
+      save.type = 'button';
+      const submit = () => {
+        const value = input.value.trim();
+        if (!value) { toast('请输入路径', true); input.focus(); return; }
+        if (!applySourceEdit(index, value)) { input.focus(); return; }
+        closeModal();
+      };
+      save.addEventListener('click', submit);
+      input.addEventListener('keydown', (event) => { if (event.key === 'Enter') submit(); });
+      bar.append(cancel, save);
+      setTimeout(() => input.focus(), 0);
+    }
+  });
+}
+
+function applySourceEdit(index, value) {
+  if (state.sources[index] === undefined) return false;
+  if (state.sources.some((source, i) => i !== index && source === value)) {
+    toast('这个源已经在列表中了', true);
+    return false;
+  }
+  state.sources[index] = value;
+  renderSources();
+  updateMeta();
+  schedulePlan();
+  toast('已更新源');
+  return true;
+}
+
 function openBulkSource() {
   const body = el('div');
   const field = el('div', 'field');
@@ -1081,7 +1156,8 @@ function setDestination(value) {
 }
 
 function openBrowser(mode, onPick, options = {}) {
-  browse = { mode, onPick, data: null, selectOnly: !!options.selectOnly };
+  const editing = !!options.edit;
+  browse = { mode, onPick, data: null, selectOnly: !!options.selectOnly, editing };
   const body = el('div');
   const pathRow = el('div', 'browse-path');
   const pathInput = el('input');
@@ -1092,12 +1168,14 @@ function openBrowser(mode, onPick, options = {}) {
   pathRow.append(pathInput, go);
   const hint = el('div', 'hint', mode === 'dest'
     ? '只能选择目录。点击目录进入，底部按钮选择当前目录。'
-    : '点击目录进入；点击文件直接添加为源；底部按钮添加当前目录。');
+    : editing
+      ? '点击目录进入；点击文件直接替换源；底部按钮使用当前目录。'
+      : '点击目录进入；点击文件直接添加为源；底部按钮添加当前目录。');
   const list = el('div', 'browse-list');
   body.append(pathRow, hint, list);
 
   const { footer } = openModal({
-    title: mode === 'dest' ? '选择目标目录' : '浏览本机路径',
+    title: mode === 'dest' ? '选择目标目录' : editing ? '编辑源路径' : '浏览本机路径',
     subtitle: '运行服务的主机上的文件系统',
     wide: true,
     body,
@@ -1115,7 +1193,7 @@ function openBrowser(mode, onPick, options = {}) {
       const cancel = el('button', 'btn ghost', '取消');
       cancel.type = 'button';
       cancel.addEventListener('click', closeModal);
-      const pick = el('button', 'btn primary', mode === 'dest' ? '选择当前目录' : '添加当前目录');
+      const pick = el('button', 'btn primary', mode === 'dest' ? '选择当前目录' : editing ? '使用当前目录' : '添加当前目录');
       pick.type = 'button';
       const chooseCurrent = () => {
         const path = (pathInput.value || '').trim() || (browse.data && browse.data.path);
@@ -1186,6 +1264,7 @@ function openHelp() {
         <li><code>a</code> 添加源；<code>A</code> 批量粘贴</li>
         <li><code>d</code> 设置目标；<code>p</code> 选择预设</li>
         <li><code>r</code> 开始；<code>Esc</code> 关闭弹窗</li>
+        <li>源地址右侧的 <b>✎</b> 可编辑；点击目标地址也可以直接修改</li>
         <li>源目录默认复制到目标内部（/home/a → /mnt/a/a）；勾选“只复制目录内容”可直接同步到 /mnt/a</li>
         <li>左边的 <b>浏览本机</b> 会读取运行服务的主机文件系统</li>
       </ul>

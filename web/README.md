@@ -53,6 +53,31 @@ rsync-web --listen 0.0.0.0:8787 --token my-secret
 rsync-web --version
 ```
 
+## 后台运行
+
+`--background`（或 `--daemon`）会脱离终端在后台运行，退出 SSH 会话后服务继续工作：
+
+```bash
+cd web
+make
+./bin/rsync-web --background
+./bin/rsync-web --stop
+```
+
+默认文件按端口区分：
+
+- PID：`~/.config/rsync-web/rsync-web-8787.pid`
+- 日志：`~/.cache/rsync-web/rsync-web-8787.log`
+
+也可以用 `--pid-file`、`--log-file` 指定位置。非本机监听时自动生成的访问令牌会打印在
+启动输出和日志里；建议显式传入 `--token`，或通过 SSH 隧道访问。
+
+停止时使用相同的 `--listen`（或相同的 `--pid-file`）：
+
+```bash
+rsync-web --stop --listen 127.0.0.1:8787
+```
+
 ## WSL 主机访问
 
 在 WSL2 里直接运行，Windows 主机通常可以用 `localhost` 访问：
@@ -103,7 +128,8 @@ curl -H "Authorization: Bearer <token>" http://host:8787/api/bootstrap
 
 ## 界面操作
 
-- 左栏添加源、选择目标、点击预设
+- 左栏添加源、编辑源、选择目标、点击预设
+- 点源地址右侧的 `✎` 编辑源；点目标地址或“编辑目标目录”修改目标
 - 中间调整选项；页面底部实时显示完整 rsync 命令
 - `r` 开始，`Esc` 关闭弹窗，`?` 打开帮助
 - 运行页显示进度、速度、剩余时间、当前文件和日志
