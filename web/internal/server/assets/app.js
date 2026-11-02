@@ -23,7 +23,8 @@ const OPTION_GROUPS = [
       { key: 'hardLinks', type: 'bool', label: '硬链接', flag: '-H' },
       { key: 'acls', type: 'bool', label: 'ACL', flag: '-A' },
       { key: 'xattrs', type: 'bool', label: '扩展属性', flag: '-X' },
-      { key: 'compress', type: 'bool', label: '压缩传输', flag: '-z' }
+      { key: 'compress', type: 'bool', label: '压缩传输', flag: '-z' },
+      { key: 'contentsOnly', type: 'bool', label: '只复制目录内容（不建同名子目录）', flag: '源目录加 /' }
     ]
   },
   {
@@ -60,7 +61,6 @@ const OPTION_GROUPS = [
       { key: 'numericIds', type: 'bool', label: '数字 ID', flag: '--numeric-ids' },
       { key: 'oneFileSystem', type: 'bool', label: '不跨文件系统', flag: '-x' },
       { key: 'sparse', type: 'bool', label: '稀疏文件', flag: '--sparse' },
-      { key: 'contentsOnly', type: 'bool', label: '只复制目录内容', flag: '源目录加 /' },
       { key: 'bwlimit', type: 'text', label: '带宽限制', flag: '--bwlimit', toggle: 'useBwLimit', placeholder: '例如 1.5M、10m、500K' },
       { key: 'sshKey', type: 'text', label: 'SSH 密钥', flag: 'ssh -i', placeholder: '~/.ssh/id_ed25519', browse: 'file' },
       { key: 'excludeFile', type: 'text', label: '排除文件', flag: '--exclude-from', placeholder: '每行一个排除模式', browse: 'file' },
@@ -1034,7 +1034,7 @@ function openDestination() {
     openBrowser('dest', (picked) => setDestination(picked));
   });
   row.append(browseButton);
-  field.append(row, el('div', 'hint', '目标不存在时会自动创建；远程目标不会在网页里浏览。'));
+  field.append(row, el('div', 'hint', '目标不存在时会自动创建；远程目标不会在网页里浏览。源目录默认复制到目标内部（/home/a → /mnt/a/a），要直接同步目录内容请勾选“只复制目录内容”。'));
   body.append(field);
 
   if (state.recentDestinations.length) {
@@ -1186,6 +1186,7 @@ function openHelp() {
         <li><code>a</code> 添加源；<code>A</code> 批量粘贴</li>
         <li><code>d</code> 设置目标；<code>p</code> 选择预设</li>
         <li><code>r</code> 开始；<code>Esc</code> 关闭弹窗</li>
+        <li>源目录默认复制到目标内部（/home/a → /mnt/a/a）；勾选“只复制目录内容”可直接同步到 /mnt/a</li>
         <li>左边的 <b>浏览本机</b> 会读取运行服务的主机文件系统</li>
       </ul>
     </div>

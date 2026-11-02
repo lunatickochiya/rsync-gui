@@ -64,6 +64,40 @@ func TestBuildPlanContentsOnly(t *testing.T) {
 	}
 }
 
+func TestBuildPlanRemoteDestinationUsesDesktopSemantics(t *testing.T) {
+	root := t.TempDir()
+	src := filepath.Join(root, "home", "a")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	p, err := BuildPlan(config.DefaultOptions(), []string{src}, "nas:/mnt/a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Cleanup()
+	if p.Destination != "nas:/mnt/a/" {
+		t.Fatalf("destination = %q", p.Destination)
+	}
+	if got := p.Transfers[0].Sources[0]; got != src {
+		t.Fatalf("source without contentsOnly = %q, want %q", got, src)
+	}
+
+	opts := config.DefaultOptions()
+	opts.ContentsOnly = true
+	p, err = BuildPlan(opts, []string{src}, "nas:/mnt/a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Cleanup()
+	if got := p.Transfers[0].Sources[0]; got != src+string(filepath.Separator) {
+		t.Fatalf("contents-only source = %q", got)
+	}
+}
+
 func TestBuildPlanMissingSource(t *testing.T) {
 	root := t.TempDir()
 	_, err := BuildPlan(config.DefaultOptions(), []string{filepath.Join(root, "missing")}, filepath.Join(root, "dest"))

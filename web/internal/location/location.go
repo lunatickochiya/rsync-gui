@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	pathpkg "path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -81,7 +81,7 @@ func DisplayPath(path string) string {
 
 // Parse parses one source or destination string.
 func Parse(spec string) (Location, error) {
-	raw := strings.TrimSpace(spec)
+	raw := stripQuotes(spec)
 	if raw == "" {
 		return Location{}, fmt.Errorf("路径为空")
 	}
@@ -125,46 +125,89 @@ func parseURL(raw string) (Location, error) {
 		}
 		port = n
 	}
+	// Dolphin writes "sftp://host/~/dir" for paths relative to the home
+	// directory; rsync itself expects "host:dir" for that.
 	path := u.Path
-	if path == "" {
+	switch {
+	case strings.HasPrefix(path, "/~/"):
+		path = path[3:]
+	case path == "/~":
+		path = ""
+	case path == "":
 		path = "/"
 	}
 	if u.RawQuery != "" || u.Fragment != "" {
 		return Location{}, fmt.Errorf("远程地址不能包含查询参数或片段")
 	}
 	return Location{
-		Raw: raw, Kind: Remote, Path: path,
+		Raw: raw, Kind: Remote, Path: cleanRemotePath(path),
 		User: u.User.Username(), Host: u.Hostname(), Port: port, Scheme: u.Scheme,
 	}, nil
 }
 
-var hostPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
+// stripQuotes removes one matching pair of surrounding quotes, like the
+// desktop application does for pasted paths.
+func stripQuotes(text string) string {
+	s := strings.TrimSpace(text)
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			s = s[1 : len(s)-1]
+		}
+	}
+	return s
+}
+
+// cleanRemotePath normalises a remote POSIX path and keeps a trailing slash,
+// because rsync treats "dir/" as the contents of the directory. An empty path
+// means the home directory and is rendered as "." (the desktop application
+// does the same).
+func cleanRemotePath(path string) string {
+	if path == "" {
+		return "."
+	}
+	trailingSlash := len(path) > 1 && strings.HasSuffix(path, "/")
+	cleaned := pathpkg.Clean(path)
+	if trailingSlash && cleaned != "/" {
+		cleaned += "/"
+	}
+	return cleaned
+}
 
 // isRsyncRemote returns true for [user@]host:path, but not for a local
-// path that merely contains a colon after a slash.
+// path that merely contains a colon after a slash. The rules match the
+// desktop application's parser: the host must not contain '/', ':' or a
+// second '@', an empty path means the home directory, and "host::module"
+// (rsync daemon syntax) is not a remote location here.
 func isRsyncRemote(spec string) bool {
 	if strings.HasPrefix(spec, "/") || strings.HasPrefix(spec, ".") || strings.HasPrefix(spec, "~") {
 		return false
 	}
 	if strings.HasPrefix(spec, "[") {
 		end := strings.Index(spec, "]")
-		return end > 0 && end+1 < len(spec) && spec[end+1] == ':'
+		if end <= 0 || end+1 >= len(spec) || spec[end+1] != ':' {
+			return false
+		}
+		return end+2 >= len(spec) || spec[end+2] != ':'
 	}
 	colon := strings.Index(spec, ":")
 	if colon <= 0 {
 		return false
 	}
-	if slash := strings.IndexAny(spec, `/\`); slash >= 0 && slash < colon {
+	// "host::module" is rsync daemon syntax, which this application does not support.
+	if colon+1 < len(spec) && spec[colon+1] == ':' {
 		return false
 	}
-	host := spec[:colon]
-	if at := strings.LastIndex(host, "@"); at >= 0 {
-		host = host[at+1:]
-	}
-	if host == "" || !hostPattern.MatchString(host) {
+	hostPart := spec[:colon]
+	if strings.Contains(hostPart, "/") {
 		return false
 	}
-	return colon+1 < len(spec)
+	if at := strings.Index(hostPart, "@"); at >= 0 {
+		if at == 0 || strings.Contains(hostPart[at+1:], "@") {
+			return false
+		}
+		hostPart = hostPart[at+1:]
+	}
+	return hostPart != "" && !strings.Contains(hostPart, "@")
 }
 
 func parseRsyncRemote(raw string) (Location, error) {
@@ -192,10 +235,7 @@ func parseRsyncRemote(raw string) (Location, error) {
 	if hostPart == "" {
 		return Location{}, fmt.Errorf("远程地址缺少主机名")
 	}
-	if path == "" {
-		path = "/"
-	}
-	return Location{Raw: raw, Kind: Remote, Path: path, User: user, Host: hostPart, Scheme: "ssh"}, nil
+	return Location{Raw: raw, Kind: Remote, Path: cleanRemotePath(path), User: user, Host: hostPart, Scheme: "ssh"}, nil
 }
 
 func parseLocal(raw, path string) (Location, error) {

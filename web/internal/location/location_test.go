@@ -89,6 +89,53 @@ func TestLocalColon(t *testing.T) {
 	}
 }
 
+func TestParseMatchesDesktopPaths(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	cases := []struct {
+		text string
+		user string
+		host string
+		port int
+		path string
+		spec string
+	}{
+		{"  '/tmp/a b'  ", "", "", 0, "/tmp/a b", "/tmp/a b"},
+		{"file:///tmp/a%20b", "", "", 0, "/tmp/a b", "/tmp/a b"},
+		{"/tmp/a//b/", "", "", 0, "/tmp/a/b", "/tmp/a/b"},
+		{"sftp://me@nas:2222/data/", "me", "nas", 2222, "/data/", "me@nas:/data/"},
+		{"sftp://nas/~/docs", "", "nas", 0, "docs", "nas:docs"},
+		{"host:", "", "host", 0, ".", "host:."},
+		{"host:/srv//x/../y/", "", "host", 0, "/srv/y/", "host:/srv/y/"},
+		{"host:docs", "", "host", 0, "docs", "host:docs"},
+	}
+	for _, tc := range cases {
+		loc, err := Parse(tc.text)
+		if err != nil {
+			t.Fatalf("Parse(%q): %v", tc.text, err)
+		}
+		wantKind := Local
+		if tc.host != "" {
+			wantKind = Remote
+		}
+		if loc.Kind != wantKind || loc.User != tc.user || loc.Host != tc.host || loc.Port != tc.port || loc.Path != tc.path {
+			t.Fatalf("Parse(%q) = %+v", tc.text, loc)
+		}
+		if got := loc.RsyncSpec(); got != tc.spec {
+			t.Fatalf("Parse(%q).RsyncSpec() = %q, want %q", tc.text, got, tc.spec)
+		}
+	}
+}
+
+func TestParseRemoteDaemonSyntaxIsLocal(t *testing.T) {
+	loc, err := Parse("host::module")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loc.Kind != Local {
+		t.Fatalf("host::module should stay a local path: %+v", loc)
+	}
+}
+
 func TestArgForContentsOnly(t *testing.T) {
 	dir := t.TempDir()
 	loc, err := Parse(dir)
