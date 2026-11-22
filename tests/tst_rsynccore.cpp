@@ -1061,11 +1061,17 @@ void TestRsyncCore::copyUndoEngine()
     const QString backup = dest + "/.rsync-gui-undo-test";
     QVERIFY(QDir().mkpath(dest + "/d"));
     QVERIFY(QDir().mkpath(backup + "/gone/inner"));
+    // A merge case: the directory still exists in the destination, so the old
+    // files inside are moved back one by one (not the whole tree with one rename).
+    QVERIFY(QDir().mkpath(backup + "/merged"));
+    QVERIFY(QDir().mkpath(dest + "/merged"));
     writeFile(dest + "/d/leftover.tmp", "junk"); // not in the record: a partial file of a cancelled run
     writeFile(backup + "/gone/inner/file", "restored");
     writeFile(backup + "/replaced", "old version");
     writeFile(dest + "/replaced", "new version");
     writeFile(backup + "/blocked", "kept simple");
+    writeFile(backup + "/merged/file", "old version");
+    writeFile(dest + "/merged/file", "new version");
 
     UndoRecord record;
     record.destination = dest;
@@ -1075,18 +1081,20 @@ void TestRsyncCore::copyUndoEngine()
 
     const CopyUndo::Counts counts = CopyUndo::count(record);
     QCOMPARE(counts.deletions, 1); // "d"; "d/x" was never created, the unsafe names are skipped
-    QCOMPARE(counts.restorations, 5); // gone, gone/inner, gone/inner/file, replaced, blocked
+    QCOMPARE(counts.restorations, 7); // gone, gone/inner, gone/inner/file, replaced, blocked, merged, merged/file
 
     const CopyUndo::Result result = CopyUndo::execute(record);
     // The unsafe names are skipped, everything else is undone - also the file that the
     // record does not know about, because it is inside a directory that it does.
     QCOMPARE(result.failed, 2); // "../escape" and "/absolute"
     QCOMPARE(result.deleted, 2); // d/leftover.tmp and d
-    QCOMPARE(result.restored, 5);
+    QCOMPARE(result.restored, 7);
     QVERIFY(!QFile::exists(dest + "/d"));
     QCOMPARE(readFile(dest + "/gone/inner/file"), QByteArray("restored"));
     QCOMPARE(readFile(dest + "/replaced"), QByteArray("old version"));
     QCOMPARE(readFile(dest + "/blocked"), QByteArray("kept simple"));
+    QCOMPARE(readFile(dest + "/merged/file"), QByteArray("old version"));
+    QVERIFY(!QFile::exists(backup + "/merged"));
     QVERIFY(!QFile::exists(record.undoDir()));
     QCOMPARE(result.problems.size(), 2);
 }

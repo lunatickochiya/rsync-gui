@@ -331,7 +331,16 @@ CopyUndo::Result CopyUndo::execute(const UndoRecord &record, const std::atomic_b
                 }
                 if (root)
                     ::unlink(QByteArray(from + '/' + LocalPath::encode(recordFileName())).constData());
-                return ::rmdir(from.constData()) == 0;
+                // The directory itself is emptied and removed: count it like count()
+                // does (the root backup dir is not an entry of it).
+                if (::rmdir(from.constData()) == 0) {
+                    if (!root) {
+                        ++*restored;
+                        ++*done;
+                    }
+                    return true;
+                }
+                return false;
             }
             if (::rename(from.constData(), to.constData()) != 0) {
                 ++result.failed;
