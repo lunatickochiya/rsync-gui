@@ -1,5 +1,6 @@
 #pragma once
 
+#include "copyundo.h"
 #include "location.h"
 #include "rsyncoptions.h"
 
@@ -80,6 +81,19 @@ public:
         }
     };
 
+    // One line of rsync --itemize-changes output of the copy pass: "YXcstpoguax name" or
+    // "*deleting name". `name` is relative to the destination, without a trailing "/" and
+    // without the link target that %L appends to symlinks (" => ...") and hard links
+    // (" -> ...").
+    struct ItemizedInfo
+    {
+        QChar type;    // '>' / '<' transferred, 'c' created, 'h' hard-linked, '*' deleted, '.' not updated
+        QString flags; // the nine attribute flags, empty for deletions
+        QString name;
+    };
+    // Returns true if the line has that format (see also parseDifferenceLine()).
+    static bool parseItemizedLine(const QString &line, ItemizedInfo *info = nullptr);
+
     static Plan plan(const QList<Location> &sources, const Location &destination, const RsyncOptions &options);
     // Parses an rsync --progress / --info=progress2 line.
     // `humanLevel` is the number of -h options + 1, as in rsync: 1 = plain numbers with thousands
@@ -133,6 +147,9 @@ public:
     const RsyncOptions &options() const { return m_options; }
     // Entries reported by the verification pass.
     const QStringList &differingFiles() const { return m_differingFiles; }
+    // The undo data of the last finished run, if undo was possible for it (local
+    // destination, no dry run, no move): set when undoRecordAvailable() is emitted.
+    const UndoRecord &undoRecord() const { return m_undoRecord; }
 
 signals:
     void log(RsyncJob::LogLevel level, const QString &text);
@@ -143,6 +160,9 @@ signals:
     void transferRateChanged(qint64 bytesPerSecond, qint64 processedBytes);
     void phaseChanged(const QString &text);
     void finished();
+    // At the end of a run that changed the destination and can be undone: the data of
+    // CopyUndo (see also undoRecord(), valid until the job is destroyed).
+    void undoRecordAvailable(const UndoRecord &record);
 
 private:
     enum class Phase { Copy, Verify, Remove }; // Remove: the last pass of a verified move
@@ -180,6 +200,13 @@ private:
     int m_lastTotal = 0;
     bool m_running = false;
     bool m_cancelRequested = false;
+    // Undo data of the running job (see RsyncOptions::undoDirName): entries that a
+    // transfer created new, and the local destination that they were copied into.
+    bool m_undoActive = false;   // this transfer records undo data
+    bool m_undoLogged = false;   // the log line about the undo data was emitted
+    QString m_undoDestination;   // the destination directory, without a trailing "/"
+    QStringList m_undoNew;       // entries that the run created, relative to the destination
+    UndoRecord m_undoRecord;     // filled at finish(); undoRecordAvailable() is emitted
     std::shared_ptr<std::atomic<bool>> m_dropCancel; // set while the page cache is being dropped
     QPointer<QThread> m_dropThread;
 };

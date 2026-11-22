@@ -29,6 +29,12 @@ be passed as additional arguments.
   (`git ls-files`, with or without `.git`),
 - **verification after copying**: a second rsync pass that compares checksums of the source and the
   destination and lists every file that differs or is missing,
+- **undo of the last copy** (*Undo copy*): the copy runs with `--backup --backup-dir` (a hidden
+  directory inside the destination) and `--itemize-changes`, so files that it overwrites or deletes
+  are kept and created entries are recorded. Undoing restores the destination to its state before
+  the run - also after a cancelled or failed copy, and after restarting the application. Not
+  possible for remote destinations, dry runs and moves; the kept files need extra space in the
+  destination until the next copy,
 - preview of the generated command, progress bar (per file or overall) with a live **speed graph**
   behind it, speed and ETA, a log with the time of every line (the date in the line that starts
   a run and when the day changes),

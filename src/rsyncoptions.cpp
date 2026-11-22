@@ -79,6 +79,7 @@ constexpr BoolOption kBoolOptions[] = {
     {"removeSourceDirs", &RsyncOptions::removeSourceDirs},
     {"dryRun", &RsyncOptions::dryRun},
     {"verifyAfter", &RsyncOptions::verifyAfter},
+    {"allowUndo", &RsyncOptions::allowUndo},
     {"useBwLimit", &RsyncOptions::useBwLimit},
     {"useRemoteShell", &RsyncOptions::useRemoteShell},
     {"autoModifyWindow", &RsyncOptions::autoModifyWindow},
@@ -241,6 +242,19 @@ QStringList RsyncOptions::buildArguments(int port, bool removeSources) const
     if (!flags.isEmpty())
         args << QLatin1Char('-') + flags;
     args << longOptions << remoteShellArguments(port) << extra;
+
+    // Undo data for a copy into a local destination (see undoDirName, set by the window for
+    // one run): rsync moves files that it overwrites or deletes into the backup dir (the
+    // relative path is kept, so undo can move them back) and prints an itemized line for
+    // every entry that it changes. The protect rule keeps later runs with --delete from
+    // removing the backup dir: the flags come after the additional arguments, so that they
+    // cannot be overridden accidentally (undo is turned off when they set their own).
+    if (!removeSources && !undoDirName.isEmpty() && !dryRun && !removeSourceFiles) {
+        args << QStringLiteral("--itemize-changes")
+             << QStringLiteral("--backup")
+             << QStringLiteral("--backup-dir=") + undoDirName
+             << QStringLiteral("--filter=P /") + undoDirName;
+    }
     return args;
 }
 
@@ -334,6 +348,28 @@ QStringList RsyncOptions::extraArgumentList() const
     QStringList args;
     splitArguments(extraArguments, &args);
     return args;
+}
+
+bool RsyncOptions::undoUsable() const
+{
+    // Anything that would take over the output format or the backup mechanism of rsync
+    // disables undo: the run then no longer reports or keeps what undo relies on.
+    for (const QString &arg : extraArgumentList()) {
+        if (arg == QLatin1String("-b") || arg == QLatin1String("--backup"))
+            return false;
+        if (arg.startsWith(QLatin1String("--backup-dir")))
+            return false;
+        if (arg == QLatin1String("-i") || arg.startsWith(QLatin1String("--itemize")))
+            return false;
+        if (arg.startsWith(QLatin1String("--out-format")))
+            return false;
+        // A short option group like -rit: check for the letters of the options above.
+        if (arg.size() > 1 && arg.startsWith(QLatin1Char('-')) && !arg.startsWith(QLatin1String("--"))) {
+            if (arg.contains(QLatin1Char('b')) || arg.contains(QLatin1Char('i')))
+                return false;
+        }
+    }
+    return true;
 }
 
 QString RsyncOptions::validate() const

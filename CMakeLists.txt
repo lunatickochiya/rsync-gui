@@ -18,6 +18,7 @@ add_library(rsynccore STATIC
     src/localpath.h src/localpath.cpp
     src/location.h src/location.cpp
     src/rsyncoptions.h src/rsyncoptions.cpp
+    src/copyundo.h src/copyundo.cpp
     src/rsyncjob.h src/rsyncjob.cpp
     src/speedhistory.h src/speedhistory.cpp
     src/filelisting.h src/filelisting.cpp

@@ -73,6 +73,15 @@ struct RsyncOptions
     // Not an option of the window and not saved: set for a run when the destination keeps file times
     // less precisely than rsync compares them (FAT: 2 s), see RsyncJob::modifyWindowFor().
     int modifyWindow = 0;      // --modify-window (with -t, unless given in extraArguments)
+    // Undo support: a copy with these options can be undone afterwards (see CopyUndo).
+    // The user's additional arguments must not touch what undo relies on, so that they
+    // cannot silently disable it (see undoUsable()).
+    bool allowUndo = true;
+    // Not saved: the name of the backup directory inside the destination, set for one run
+    // when undo is possible (a local destination, no dry run, no move). Files that the run
+    // overwrites or deletes are moved there (--backup --backup-dir), and --itemize-changes
+    // reports what is copied, so that the run can be undone later.
+    QString undoDirName;
 
     // The options for a copy. `port` (if non-zero) is added to the remote shell command.
     // For a verified move (see verifiedMove()) the copy does not remove the sources yet.
@@ -97,6 +106,10 @@ struct RsyncOptions
     bool verifiedMove() const { return removeSourceFiles && canVerify(); }
     // Whether emptied source directories are removed after the transfer (not an rsync option).
     bool removesSourceDirs() const { return removeSourceFiles && removeSourceDirs && !dryRun; }
+    // Whether a copy with these options could record undo data: the additional arguments must
+    // not change the itemized output or use --backup themselves. Whether undo is possible for
+    // a run also depends on the destination (local only) and on dryRun/removeSourceFiles.
+    bool undoUsable() const;
 
     // Returns an empty string if the options are valid, otherwise an error description.
     QString validate() const;

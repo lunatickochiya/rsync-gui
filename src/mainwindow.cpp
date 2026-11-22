@@ -41,6 +41,7 @@
 #include <QStatusBar>
 #include <QStorageInfo>
 #include <QTabWidget>
+#include <QThread>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QDateTime>
 #include <QTimer>
@@ -396,6 +397,16 @@ void MainWindow::buildUi()
                                  "the verification has passed."));
     form->addRow(tr("Verify:"), m_verifyCheck);
 
+    m_allowUndoCheck = new QCheckBox(tr("Allow undoing the copy (keeps replaced files in the destination)"),
+                                     m_optionsBox);
+    m_allowUndoCheck->setToolTip(tr("Runs the copy with --backup: files that it overwrites or deletes in the "
+                                    "destination are kept in a hidden directory there, and what is copied is "
+                                    "recorded. \"Undo copy\" afterwards restores the destination to its state "
+                                    "before the run - also after a cancelled or failed copy.\n"
+                                    "Not possible for remote destinations, dry runs and moves; the kept files "
+                                    "need extra space in the destination until the next copy."));
+    form->addRow(tr("Undo:"), m_allowUndoCheck);
+
     m_extraEdit = new QLineEdit(m_optionsBox);
     m_extraEdit->setPlaceholderText(tr("e.g. --exclude='*.tmp' --exclude=.cache --mkpath"));
     m_extraEdit->setToolTip(tr("Any other rsync options, written like in a shell (quotes are supported). "
@@ -442,6 +453,10 @@ void MainWindow::buildUi()
     m_startButton->setStyleSheet(QStringLiteral("QPushButton:enabled { font-weight: bold; padding: 4px 16px; }"));
     m_startButton->setDefault(true);
     m_cancelButton = new QPushButton(QIcon::fromTheme(QStringLiteral("process-stop")), tr("Cancel"), central);
+    m_undoButton = new QPushButton(QIcon::fromTheme(QStringLiteral("edit-undo")), tr("Undo copy..."), central);
+    m_undoButton->setToolTip(tr("Restores the destination of the last copy to its state before the run: entries "
+                                "that it created are deleted, replaced or deleted files are restored from the "
+                                "kept old versions.\nThe sources are not touched."));
     m_closeWhenFinishedCheck = new QCheckBox(tr("Close when finished"), central);
     m_closeWhenFinishedCheck->setToolTip(tr("Quit Rsync GUI after a successful transfer. After errors, verification "
                                             "differences, cancelling or a dry run the window stays open."));
@@ -449,6 +464,7 @@ void MainWindow::buildUi()
     runRow->addWidget(m_closeWhenFinishedCheck);
     runRow->addWidget(m_startButton);
     runRow->addWidget(m_cancelButton);
+    runRow->addWidget(m_undoButton);
     mainLayout->addLayout(runRow);
 
     m_currentFile = new QLabel(central);
@@ -510,6 +526,7 @@ void MainWindow::buildUi()
     connect(exportButton, &QPushButton::clicked, this, &MainWindow::exportSettings);
     connect(m_startButton, &QPushButton::clicked, this, &MainWindow::startCopy);
     connect(m_cancelButton, &QPushButton::clicked, this, &MainWindow::cancelCopy);
+    connect(m_undoButton, &QPushButton::clicked, this, &MainWindow::onUndoCopy);
     connect(clearLog, &QPushButton::clicked, m_log, &QPlainTextEdit::clear);
     // A window preference, not an rsync option: remembered right away, also in a preset (session-only) window.
     connect(m_closeWhenFinishedCheck, &QCheckBox::toggled, this, [](bool on) {
@@ -650,6 +667,24 @@ void MainWindow::loadSettings()
     m_destinationCombo->setEditText(QString());
     m_closeWhenFinishedCheck->setChecked(settings.value(QStringLiteral("window/closeWhenFinished"), false).toBool());
     restoreGeometry(settings.value(QStringLiteral("window/geometry")).toByteArray());
+
+    // A copy run of the previous session that can still be undone (its data is inside the
+    // destination; the pointer to it is the only thing that is remembered here).
+    const QString recordPath = settings.value(QStringLiteral("undo/recordPath")).toString();
+    if (!recordPath.isEmpty()) {
+        bool ok = false;
+        const UndoRecord record = CopyUndo::load(recordPath, &ok);
+        const CopyUndo::Counts counts = CopyUndo::count(record);
+        if (ok && (counts.backupDirExists || counts.deletions > 0)) {
+            m_undoRecord = record;
+            appendLog(RsyncJob::LogLevel::Info,
+                      tr("The last copy can still be undone: %1").arg(LocalPath::display(record.destination)));
+        } else {
+            QStringList problems;
+            CopyUndo::discard(record, &problems); // nothing usable left: no leftovers in the destination
+            QSettings().remove(QStringLiteral("undo/recordPath"));
+        }
+    }
 }
 
 void MainWindow::saveSettings() const
@@ -720,6 +755,7 @@ RsyncOptions MainWindow::currentOptions() const
     o.removeSourceDirs = m_removeSourceDirsCheck->isChecked();
     o.dryRun = m_dryRunCheck->isChecked();
     o.verifyAfter = m_verifyCheck->isChecked();
+    o.allowUndo = m_allowUndoCheck->isChecked();
     o.autoModifyWindow = m_autoModifyWindowCheck->isChecked();
     o.extraArguments = m_extraEdit->text().trimmed();
     return o;
@@ -765,6 +801,7 @@ void MainWindow::applyOptions(const RsyncOptions &o)
     m_removeSourceDirsCheck->setChecked(o.removeSourceDirs);
     m_dryRunCheck->setChecked(o.dryRun);
     m_verifyCheck->setChecked(o.verifyAfter);
+    m_allowUndoCheck->setChecked(o.allowUndo);
     m_autoModifyWindowCheck->setChecked(o.autoModifyWindow);
     m_extraEdit->setText(o.extraArguments);
     updatePreview();
@@ -1019,15 +1056,16 @@ void MainWindow::updatePreview()
 void MainWindow::updateControls()
 {
     const bool running = m_job && m_job->isRunning();
-    m_sourceBox->setEnabled(!running);
-    m_destinationBox->setEnabled(!running);
-    m_optionsBox->setEnabled(!running);
+    const bool busy = running || m_undoRunning;
+    m_sourceBox->setEnabled(!busy);
+    m_destinationBox->setEnabled(!busy);
+    m_optionsBox->setEnabled(!busy);
     if (m_importAction)
-        m_importAction->setEnabled(!running);
+        m_importAction->setEnabled(!busy);
     if (m_presetMenu)
-        m_presetMenu->setEnabled(!running);
+        m_presetMenu->setEnabled(!busy);
     if (m_recentSettingsMenu)
-        m_recentSettingsMenu->setEnabled(!running);
+        m_recentSettingsMenu->setEnabled(!busy);
     for (QCheckBox *box : impliedByArchive())
         box->setEnabled(!m_archiveCheck->isChecked());
     m_bwLimitEdit->setEnabled(m_bwLimitCheck->isChecked());
@@ -1039,7 +1077,9 @@ void MainWindow::updateControls()
     m_startButton->setEnabled(!running && m_sourceList->count() > 0 && destination().isValid());
     m_startButton->setText(m_dryRunCheck->isChecked() ? tr("Dry run")
                                                       : m_removeSourceCheck->isChecked() ? tr("Move") : tr("Copy"));
-    m_cancelButton->setEnabled(running);
+    const bool undoing = m_undoRunning || (m_job && m_job->isRunning());
+    m_cancelButton->setEnabled(undoing);
+    m_undoButton->setEnabled(!undoing && m_undoRecord.valid());
 
     QString error = currentOptions().validate();
     if (error.isEmpty() && m_verifyCheck->isChecked() && !currentOptions().canVerify())
@@ -1372,6 +1412,29 @@ void MainWindow::startCopy()
     if (options.autoModifyWindow && !dest.isRemote() && (options.archive || options.times))
         options.modifyWindow = RsyncJob::modifyWindowFor(dest.path, !options.dryRun);
 
+    // Undo data for this run (see CopyUndo). The name is fixed here, so that the command
+    // preview and the confirmation dialog above show the command that actually runs.
+    options.undoDirName.clear();
+    if (options.allowUndo) {
+        if (options.dryRun || options.removeSourceFiles) {
+            // A dry run changes nothing, and after a move the sources are gone: undoing
+            // just the destination would destroy the only remaining copy.
+        } else if (dest.isRemote()) {
+            appendLog(RsyncJob::LogLevel::Warning,
+                      tr("Undo is not possible: files that the run replaces cannot be kept on a remote destination."));
+        } else if (!options.undoUsable()) {
+            appendLog(RsyncJob::LogLevel::Warning,
+                      tr("Undo is not possible: the additional arguments change what rsync reports or keeps "
+                         "(--backup, -i/--itemize-changes, --out-format)."));
+        } else {
+            options.undoDirName = QStringLiteral(".rsync-gui-undo-%1")
+                                      .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss")));
+        }
+    }
+
+    // One undo at a time: the data of the previous run is removed before this one starts,
+    // so that rsync does not see it as part of the destination (especially with --delete).
+
     // Copying is not destructive - only the options that delete files are confirmed.
     if (!options.dryRun && (options.deleteExtraneous || options.removeSourceFiles)) {
         QStringList commands;
@@ -1406,6 +1469,10 @@ void MainWindow::startCopy()
             return;
     }
 
+    // One undo at a time: the data of the previous run is removed before this one starts,
+    // so that rsync does not see it as part of the destination (especially with --delete).
+    discardUndoRecord();
+
     rememberDestination(dest.toString());
     saveSettings();
     delete m_job;
@@ -1427,6 +1494,9 @@ void MainWindow::startCopy()
     });
     connect(m_job, &RsyncJob::statusChanged, m_transferStatus, &QLabel::setText);
     connect(m_job, &RsyncJob::finished, this, &MainWindow::onJobFinished);
+    connect(m_job, &RsyncJob::undoRecordAvailable, this, [this](const UndoRecord &record) {
+        setUndoRecord(record);
+    });
 
     for (const QString &note : std::as_const(plan.notes))
         appendLog(RsyncJob::LogLevel::Warning, note);
@@ -1513,9 +1583,156 @@ void MainWindow::stopMeasuringSources()
 
 void MainWindow::cancelCopy()
 {
+    if (m_undoRunning) {
+        if (m_undoCancel)
+            m_undoCancel->store(true);
+        return;
+    }
     if (m_job)
         m_job->cancel();
 }
+
+void MainWindow::setUndoRecord(const UndoRecord &record)
+{
+    if (!record.valid())
+        return;
+    m_undoRecord = record;
+    // The data is inside the destination; the pointer to it in the settings, so that the
+    // undo also works in the next session of the application.
+    CopyUndo::save(record);
+    QSettings().setValue(QStringLiteral("undo/recordPath"), record.recordPath());
+    const CopyUndo::Counts counts = CopyUndo::count(record);
+    appendLog(RsyncJob::LogLevel::Info,
+              tr("This copy can be undone: %1 created entr(y/ies) would be deleted, %2 replaced or deleted "
+                 "entr(y/ies) would be restored (kept in %3).")
+                  .arg(counts.deletions)
+                  .arg(counts.restorations)
+                  .arg(LocalPath::display(record.undoDir())));
+    updateControls();
+}
+
+void MainWindow::clearUndoRecord()
+{
+    m_undoRecord.clear();
+    QSettings().remove(QStringLiteral("undo/recordPath"));
+    updateControls();
+}
+
+void MainWindow::discardUndoRecord()
+{
+    if (!m_undoRecord.valid())
+        return;
+    QStringList problems;
+    const bool removed = CopyUndo::discard(m_undoRecord, &problems);
+    for (const QString &problem : std::as_const(problems))
+        appendLog(RsyncJob::LogLevel::Warning, problem);
+    if (!removed)
+        appendLog(RsyncJob::LogLevel::Warning,
+                  tr("The undo data of the previous run could not be removed completely: %1")
+                      .arg(LocalPath::display(m_undoRecord.undoDir())));
+    clearUndoRecord();
+}
+
+void MainWindow::onUndoCopy()
+{
+    if (m_undoRunning || (m_job && m_job->isRunning()) || !m_undoRecord.valid())
+        return;
+
+    // The destination may have been changed by something else in the meantime.
+    const CopyUndo::Counts counts = CopyUndo::count(m_undoRecord);
+    if (!counts.backupDirExists && counts.deletions == 0) {
+        QMessageBox::information(this, tr("Undo copy"),
+                                 tr("There is nothing to undo any more: the undo data in %1 is gone.")
+                                     .arg(LocalPath::display(m_undoRecord.undoDir())));
+        clearUndoRecord();
+        return;
+    }
+    if (counts.deletions == 0 && counts.restorations == 0) {
+        clearUndoRecord(); // the run was undone already, or nothing changed
+        return;
+    }
+
+    QMessageBox box(QMessageBox::Question, tr("Undo copy"),
+                    tr("<b>Restore %1 to its state before the copy?</b><br>"
+                       "Entries that the run created are deleted: %2<br>"
+                       "Old versions that the run replaced or removed are restored: %3<br><br>"
+                       "The sources are not touched. This cannot be redone; consider a dry run (-n) for "
+                       "checking first.")
+                        .arg(LocalPath::display(m_undoRecord.destination).toHtmlEscaped())
+                        .arg(counts.deletions)
+                        .arg(counts.restorations),
+                    QMessageBox::NoButton, this);
+    box.setTextFormat(Qt::RichText);
+    QPushButton *undo = box.addButton(tr("Undo copy"), QMessageBox::DestructiveRole);
+    QPushButton *abort = box.addButton(tr("Cancel"), QMessageBox::RejectRole);
+    box.setDefaultButton(abort);
+    box.exec();
+    if (box.clickedButton() != undo)
+        return;
+
+    appendLogLines(RsyncJob::LogLevel::Info,
+                   tr("=== Undo: restore %1 ===").arg(LocalPath::display(m_undoRecord.destination)), false);
+    m_undoRunning = true;
+    updateControls();
+    m_progress->setRange(0, 1000);
+    m_progress->setValue(0);
+    m_progress->start();
+    m_currentFile->setText(tr("Undoing..."));
+    m_tabs->setCurrentIndex(m_tabs->indexOf(m_log->parentWidget()));
+
+    // The undo works on the file system only: it runs in its own thread, with progress
+    // and status lines passed back to the main thread.
+    const UndoRecord record = m_undoRecord;
+    auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_undoCancel = cancel;
+    auto result = std::make_shared<CopyUndo::Result>();
+    const std::function<void(int, const QString &)> progress = [this](int permille, const QString &status) {
+        QMetaObject::invokeMethod(this, [this, permille, status] {
+            m_progress->setValue(permille);
+            if (!status.isEmpty())
+                m_currentFile->setText(status);
+        }, Qt::QueuedConnection);
+    };
+    QThread *thread = QThread::create([record, cancel, result, progress] {
+        *result = CopyUndo::execute(record, cancel.get(), &progress);
+    });
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    connect(thread, &QThread::finished, this, [this, result, record] {
+        m_undoRunning = false;
+        m_undoCancel.reset();
+        m_progress->stop();
+        m_transferStatus->clear();
+        m_currentFile->setText(QString());
+
+        const CopyUndo::Result &r = *result;
+        for (const QString &problem : std::as_const(r.problems))
+            appendLog(RsyncJob::LogLevel::Warning, problem);
+        if (r.cancelled)
+            appendLog(RsyncJob::LogLevel::Warning,
+                      tr("Undo cancelled. The destination is between the two states now; \"Undo copy\" "
+                         "continues from here."));
+        QString text = tr("Undone: %1 entr(y/ies) deleted, %2 restored.")
+                           .arg(r.deleted)
+                           .arg(r.restored);
+        if (r.failed > 0)
+            text += tr(" %1 could not be undone.").arg(r.failed);
+        appendLog(r.failed == 0 && !r.cancelled ? RsyncJob::LogLevel::Success : RsyncJob::LogLevel::Error, text);
+        if (!r.leftInBackupDir.isEmpty())
+            appendLog(RsyncJob::LogLevel::Warning,
+                      tr("Old versions that could not be restored are still in %1.")
+                          .arg(LocalPath::display(record.destination + QLatin1Char('/') + r.leftInBackupDir)));
+        if (r.failed == 0 && !r.cancelled) {
+            clearUndoRecord(); // the backup dir is empty and removed now
+        } else {
+            // Keep the record: another "Undo copy" finishes the rest.
+            QSettings().setValue(QStringLiteral("undo/recordPath"), record.recordPath());
+        }
+        statusBar()->showMessage(text, 10000);
+        updateControls();
+    });
+    thread->start();
+}
+
 
 void MainWindow::appendLog(RsyncJob::LogLevel level, const QString &text)
 {

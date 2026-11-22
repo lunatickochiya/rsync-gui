@@ -8,6 +8,7 @@
 
 #include <QBuffer>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -246,6 +247,12 @@ private slots:
     void processedBytes();
     void parseDifference_data();
     void parseDifference();
+    void parseItemized_data();
+    void parseItemized();
+    void undoOptions();
+    void copyUndoEndToEnd();
+    void copyUndoEngine();
+    void copyUndoRecordPersistence();
     void copyLocal();
     void copyWithVerify();
     void copyRltKeepsTimesNotPermissions();
@@ -884,6 +891,231 @@ void TestRsyncCore::parseDifference()
     QCOMPARE(RsyncJob::parseDifferenceLine(line, &parsed), differs);
     if (differs)
         QCOMPARE(parsed, name);
+}
+
+void TestRsyncCore::parseItemized_data()
+{
+    QTest::addColumn<QString>("line");
+    QTest::addColumn<bool>("parsed");
+    QTest::addColumn<QChar>("type");
+    QTest::addColumn<QString>("flags");
+    QTest::addColumn<QString>("name");
+
+    QTest::newRow("new file") << ">f+++++++++ big.bin" << true << QChar('>') << "+++++++++" << "big.bin";
+    QTest::newRow("overwritten") << ">f.s....... a.txt" << true << QChar('>') << ".s......." << "a.txt";
+    QTest::newRow("pull") << "<f+++++++++ big.bin" << true << QChar('<') << "+++++++++" << "big.bin";
+    QTest::newRow("new dir") << "cd+++++++++ sub/" << true << QChar('c') << "+++++++++" << "sub";
+    QTest::newRow("symlink") << "cL+++++++++ link => target" << true << QChar('c') << "+++++++++" << "link";
+    QTest::newRow("hard link") << "hf+++++++++ name -> target" << true << QChar('h') << "+++++++++" << "name";
+    QTest::newRow("deleting file") << "*deleting   sub/old.txt" << true << QChar('*') << "" << "sub/old.txt";
+    QTest::newRow("deleting dir") << "*deleting   sub/" << true << QChar('*') << "" << "sub";
+    QTest::newRow("name with flags-like prefix") << ">f+++++++++ >f+++++++++ odd" << true << QChar('>')
+                                                 << "+++++++++" << ">f+++++++++ odd";
+    QTest::newRow("attributes only") << ".d..t...... sub/" << true << QChar('.') << "..t......" << "sub";
+    QTest::newRow("plain name") << "big.bin" << false << QChar() << "" << "";
+    QTest::newRow("status") << "sending incremental file list" << false << QChar() << "" << "";
+}
+
+void TestRsyncCore::parseItemized()
+{
+    QFETCH(QString, line);
+    QFETCH(bool, parsed);
+    QFETCH(QChar, type);
+    QFETCH(QString, flags);
+    QFETCH(QString, name);
+    RsyncJob::ItemizedInfo info;
+    QCOMPARE(RsyncJob::parseItemizedLine(line, &info), parsed);
+    if (!parsed)
+        return;
+    QCOMPARE(info.type, type);
+    QCOMPARE(info.flags, flags);
+    QCOMPARE(info.name, name);
+}
+
+void TestRsyncCore::undoOptions()
+{
+    RsyncOptions options = testOptions();
+    QVERIFY(options.undoUsable());
+    QVERIFY(!options.arguments().contains(QLatin1String("--backup")));
+
+    options.undoDirName = QStringLiteral(".rsync-gui-undo-test");
+    QStringList args = options.arguments();
+    QVERIFY(args.contains(QStringLiteral("--itemize-changes")));
+    QVERIFY(args.contains(QStringLiteral("--backup")));
+    QVERIFY(args.contains(QStringLiteral("--backup-dir=.rsync-gui-undo-test")));
+    QVERIFY(args.contains(QStringLiteral("--filter=P /.rsync-gui-undo-test")));
+    // After the additional arguments, so that they cannot be overridden by accident.
+    options.extraArguments = QStringLiteral("--exclude=x");
+    args = options.arguments();
+    QVERIFY(args.indexOf(QStringLiteral("--exclude=x")) < args.indexOf(QStringLiteral("--itemize-changes")));
+
+    // Never for a dry run or a move: undoing either would be incomplete or destructive.
+    options.dryRun = true;
+    QVERIFY(!options.arguments().contains(QLatin1String("--backup")));
+    options.dryRun = false;
+    options.removeSourceFiles = true;
+    QVERIFY(!options.arguments().contains(QLatin1String("--backup")));
+    QVERIFY(!options.removalArguments().contains(QLatin1String("--backup")));
+    options.verifyAfter = true; // a verified move: the copy pass must not record undo data either
+    QVERIFY(!options.arguments().contains(QLatin1String("--backup")));
+    options.removeSourceFiles = false;
+    options.verifyAfter = false;
+
+    // What the additional arguments take over disables undo.
+    const QStringList conflicting = {QStringLiteral("-b"), QStringLiteral("--backup"),
+                                     QStringLiteral("--backup-dir=/x"), QStringLiteral("-i"),
+                                     QStringLiteral("--itemize-changes"), QStringLiteral("--out-format=%i"),
+                                     QStringLiteral("-avb")};
+    for (const QString &extra : conflicting) {
+        options.extraArguments = extra;
+        QVERIFY2(!options.undoUsable(), qPrintable(extra));
+    }
+    options.extraArguments = QStringLiteral("-avz"); // -v and -z do not interfere
+    QVERIFY(options.undoUsable());
+}
+
+void TestRsyncCore::copyUndoEndToEnd()
+{
+    if (!haveRsync())
+        QSKIP("rsync is not installed");
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    // The destination before the run: a file that the run replaces, an extraneous
+    // subtree that --delete removes, and a file that the run does not change.
+    writeFile(tmp.filePath("dest/old.txt"), "old content");
+    QDir().mkpath(tmp.filePath("dest/sub/deep"));
+    writeFile(tmp.filePath("dest/sub/deep/d.txt"), "deep");
+    writeFile(tmp.filePath("dest/sub/kept.txt"), "kept");
+    writeFile(tmp.filePath("dest/same.txt"), "same");
+    // The source: replaces old.txt (large, so that the classification of the run sees the
+    // old file while it is being transferred), adds fresh.txt and the directory newdir.
+    writeFile(tmp.filePath("src/old.txt"), QByteArray(8 * 1024 * 1024, 'n'));
+    writeFile(tmp.filePath("src/same.txt"), "same");
+    writeFile(tmp.filePath("src/fresh.txt"), "fresh");
+    QDir().mkpath(tmp.filePath("src/newdir/deep"));
+    writeFile(tmp.filePath("src/newdir/a.txt"), "aaa");
+    writeFile(tmp.filePath("src/newdir/deep/b.txt"), "bbb");
+    QVERIFY(QFile::link("a.txt", tmp.filePath("src/newdir/link")));
+    const QString dest = tmp.filePath("dest");
+    // The unchanged file has the same time on both sides: rsync -a does not touch it.
+    setMtime(tmp.filePath("dest/same.txt"), 1000000001);
+    setMtime(tmp.filePath("src/same.txt"), 1000000001);
+
+    RsyncOptions options = testOptions();
+    options.contentsOnly = true; // the entries of the source directory go to the destination itself
+    options.deleteExtraneous = true;
+    options.undoDirName = QStringLiteral(".rsync-gui-undo-test");
+    RsyncJob job(localPlan({tmp.filePath("src")}, dest, options).transfers, options);
+    QSignalSpy undoSpy(&job, &RsyncJob::undoRecordAvailable);
+    QVERIFY(runJob(job));
+    QVERIFY(job.summary().ok());
+    QCOMPARE(undoSpy.count(), 1);
+
+    // The run changed the destination.
+    QCOMPARE(QFileInfo(dest + "/old.txt").size(), qint64(8 * 1024 * 1024));
+    QCOMPARE(readFile(dest + "/fresh.txt"), QByteArray("fresh"));
+    QVERIFY(QFileInfo(dest + "/newdir/link").isSymLink());
+    QVERIFY(!QFile::exists(dest + "/sub"));
+
+    const UndoRecord record = job.undoRecord();
+    QVERIFY(record.valid());
+    QCOMPARE(record.destination, QDir(dest).canonicalPath());
+    // Everything that the run created (the itemized lines of the entries that did not
+    // exist in the destination): the replaced old.txt is not among them - its old version
+    // is in the backup dir instead -, and same.txt was not touched at all.
+    const QStringList expectedNew = {QStringLiteral("fresh.txt"), QStringLiteral("newdir"),
+                                      QStringLiteral("newdir/a.txt"), QStringLiteral("newdir/deep"),
+                                      QStringLiteral("newdir/deep/b.txt"), QStringLiteral("newdir/link")};
+    QCOMPARE(record.newEntries.size(), expectedNew.size());
+    QCOMPARE(QSet<QString>(record.newEntries.cbegin(), record.newEntries.cend()),
+             QSet<QString>(expectedNew.cbegin(), expectedNew.cend()));
+
+    const CopyUndo::Counts counts = CopyUndo::count(record);
+    QCOMPARE(counts.deletions, 6); // the created entries of the run
+    QCOMPARE(counts.restorations, 5); // old.txt and the deleted sub tree (4 entries)
+
+    const CopyUndo::Result result = CopyUndo::execute(record);
+    QCOMPARE(result.failed, 0);
+    QVERIFY(result.problems.isEmpty());
+    QCOMPARE(result.deleted, 6); // fresh.txt and the newdir tree (5 entries)
+    QCOMPARE(result.restored, 5);
+
+    // The destination is back to its state before the run, the backup dir is gone.
+    QCOMPARE(readFile(dest + "/old.txt"), QByteArray("old content"));
+    QCOMPARE(readFile(dest + "/sub/kept.txt"), QByteArray("kept"));
+    QCOMPARE(readFile(dest + "/sub/deep/d.txt"), QByteArray("deep"));
+    QCOMPARE(readFile(dest + "/same.txt"), QByteArray("same"));
+    QVERIFY(!QFile::exists(dest + "/fresh.txt"));
+    QVERIFY(!QFile::exists(dest + "/newdir"));
+    QVERIFY(!QFile::exists(record.undoDir()));
+
+    // The data is gone: nothing left to undo.
+    const CopyUndo::Counts after = CopyUndo::count(record);
+    QCOMPARE(after.deletions + after.restorations, 0);
+}
+
+void TestRsyncCore::copyUndoEngine()
+{
+    QTemporaryDir tmp;
+    const QString dest = tmp.filePath("dest");
+    const QString backup = dest + "/.rsync-gui-undo-test";
+    QVERIFY(QDir().mkpath(dest + "/d"));
+    QVERIFY(QDir().mkpath(backup + "/gone/inner"));
+    writeFile(dest + "/d/leftover.tmp", "junk"); // not in the record: a partial file of a cancelled run
+    writeFile(backup + "/gone/inner/file", "restored");
+    writeFile(backup + "/replaced", "old version");
+    writeFile(dest + "/replaced", "new version");
+    writeFile(backup + "/blocked", "kept simple");
+
+    UndoRecord record;
+    record.destination = dest;
+    record.undoDirName = QStringLiteral(".rsync-gui-undo-test");
+    record.newEntries = {QStringLiteral("d"), QStringLiteral("d/x"), QStringLiteral("../escape"),
+                         QStringLiteral("/absolute"), QStringLiteral("missing")};
+
+    const CopyUndo::Counts counts = CopyUndo::count(record);
+    QCOMPARE(counts.deletions, 1); // "d"; "d/x" was never created, the unsafe names are skipped
+    QCOMPARE(counts.restorations, 5); // gone, gone/inner, gone/inner/file, replaced, blocked
+
+    const CopyUndo::Result result = CopyUndo::execute(record);
+    // The unsafe names are skipped, everything else is undone - also the file that the
+    // record does not know about, because it is inside a directory that it does.
+    QCOMPARE(result.failed, 2); // "../escape" and "/absolute"
+    QCOMPARE(result.deleted, 2); // d/leftover.tmp and d
+    QCOMPARE(result.restored, 5);
+    QVERIFY(!QFile::exists(dest + "/d"));
+    QCOMPARE(readFile(dest + "/gone/inner/file"), QByteArray("restored"));
+    QCOMPARE(readFile(dest + "/replaced"), QByteArray("old version"));
+    QCOMPARE(readFile(dest + "/blocked"), QByteArray("kept simple"));
+    QVERIFY(!QFile::exists(record.undoDir()));
+    QCOMPARE(result.problems.size(), 2);
+}
+
+void TestRsyncCore::copyUndoRecordPersistence()
+{
+    QTemporaryDir tmp;
+    const QString dest = tmp.filePath("dest");
+    const QString backup = dest + "/.rsync-gui-undo-test";
+    QVERIFY(QDir().mkpath(backup));
+
+    UndoRecord record;
+    record.destination = dest;
+    record.undoDirName = QStringLiteral(".rsync-gui-undo-test");
+    // A name that is not valid UTF-8, kept exactly by LocalPath.
+    record.newEntries = {QStringLiteral("plain.txt"),
+                          LocalPath::decode(QByteArrayLiteral("non-utf8-\xff.txt"))};
+    QVERIFY(CopyUndo::save(record));
+
+    bool ok = false;
+    const UndoRecord loaded = CopyUndo::load(record.recordPath(), &ok);
+    QVERIFY(ok);
+    QCOMPARE(loaded.destination, record.destination);
+    QCOMPARE(loaded.undoDirName, record.undoDirName);
+    QCOMPARE(loaded.newEntries, record.newEntries);
+    QVERIFY(QFile::remove(record.recordPath()));
+    const UndoRecord missing = CopyUndo::load(record.recordPath(), &ok);
+    QVERIFY(!ok);
+    QVERIFY(!missing.valid());
 }
 
 void TestRsyncCore::copyLocal()

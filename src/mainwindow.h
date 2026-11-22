@@ -27,6 +27,7 @@ class QPlainTextEdit;
 class QPushButton;
 class SpeedGraph;
 class QTabWidget;
+class QThread;
 
 class MainWindow : public QMainWindow
 {
@@ -94,6 +95,13 @@ private:
     void showAbout();
     void startCopy();
     void cancelCopy();
+    // Undo of the last copy run (see CopyUndo). setUndoRecord() keeps a run that can be
+    // undone (its data is inside the destination, also usable after a restart);
+    // discardUndoRecord() deletes that data before the next run starts.
+    void setUndoRecord(const UndoRecord &record);
+    void clearUndoRecord();
+    void discardUndoRecord();
+    void onUndoCopy();
     void startDesktopProgress(const RsyncOptions &options, const Location &dest);
     void measureSourcesForDesktopProgress(const RsyncOptions &options);
     void stopMeasuringSources();
@@ -159,6 +167,7 @@ private:
     QCheckBox *m_removeSourceDirsCheck = nullptr;
     QCheckBox *m_dryRunCheck = nullptr;
     QCheckBox *m_verifyCheck = nullptr;
+    QCheckBox *m_allowUndoCheck = nullptr;
     QCheckBox *m_autoModifyWindowCheck = nullptr;
     QLineEdit *m_extraEdit = nullptr;
     QAction *m_importAction = nullptr;
@@ -169,6 +178,7 @@ private:
     QLineEdit *m_previewEdit = nullptr;
     QPushButton *m_startButton = nullptr;
     QPushButton *m_cancelButton = nullptr;
+    QPushButton *m_undoButton = nullptr;
     QCheckBox *m_closeWhenFinishedCheck = nullptr;
     SpeedGraph *m_progress = nullptr; // the progress bar with the speed graph
     QLabel *m_currentFile = nullptr;
@@ -183,4 +193,9 @@ private:
     std::unique_ptr<QTemporaryFile> m_gitFileList; // the --files-from list of the current job
     // False while the options come from a preset or a --config file: they are not remembered.
     bool m_rememberOptions = true;
+    // The last run that can be undone (empty when there is none). The data lives in the
+    // destination, the pointer to it in the settings - the record survives a restart.
+    UndoRecord m_undoRecord;
+    bool m_undoRunning = false;
+    std::shared_ptr<std::atomic_bool> m_undoCancel; // stops the running undo
 };

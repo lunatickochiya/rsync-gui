@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QLocale>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
@@ -262,6 +263,44 @@ bool RsyncJob::parseDifferenceLine(const QString &line, QString *name)
     return true;
 }
 
+bool RsyncJob::parseItemizedLine(const QString &line, ItemizedInfo *info)
+{
+    static const QRegularExpression deleted(
+        QStringLiteral("^\\*deleting +(.+)$"));
+    QRegularExpressionMatch m = deleted.match(line);
+    if (m.hasMatch()) {
+        if (info) {
+            info->type = QLatin1Char('*');
+            info->flags.clear();
+            QString name = m.captured(1);
+            while (name.size() > 1 && name.endsWith(QLatin1Char('/')))
+                name.chop(1);
+            info->name = name;
+        }
+        return true;
+    }
+    // "YXcstpoguax name", for example ">f+++++++++ file" or "cd+++++++++ dir/".
+    static const QRegularExpression re(QStringLiteral("^([<>ch.])([fdLDS])([^ ]{9}) (.+)$"));
+    m = re.match(line);
+    if (!m.hasMatch())
+        return false;
+    if (info) {
+        info->type = m.captured(1).at(0);
+        info->flags = m.captured(3);
+        QString name = m.captured(4);
+        // %L appends the target of a symlink (" => ...") or a hard link (" -> ...").
+        qsizetype arrow = name.indexOf(QStringLiteral(" => "));
+        if (arrow < 0)
+            arrow = name.indexOf(QStringLiteral(" -> "));
+        if (arrow >= 0)
+            name.truncate(arrow);
+        while (name.size() > 1 && name.endsWith(QLatin1Char('/')))
+            name.chop(1);
+        info->name = name;
+    }
+    return true;
+}
+
 bool RsyncJob::isFatFileSystem(const QString &path)
 {
     constexpr long kMsdosSuperMagic = 0x4d44; // vfat and msdos, see statfs(2)
@@ -362,6 +401,10 @@ void RsyncJob::start()
     m_bytesBefore = 0;
     m_summary = {};
     m_differingFiles.clear();
+    m_undoActive = false;
+    m_undoLogged = false;
+    m_undoNew.clear();
+    m_undoRecord.clear();
     m_cancelRequested = false;
     emit progress(0);
     startNext();
@@ -415,6 +458,28 @@ void RsyncJob::startProcess()
         break;
     }
     args << QStringLiteral("--") << transfer.sources << transfer.destination;
+
+    // The destination of the copy pass decides whether this transfer records undo data.
+    // (The window sets undoDirName only when the whole job can be undone; a remote
+    // destination in a transfer of its own is still skipped here.)
+    m_undoActive = false;
+    if (m_phase == Phase::Copy && !m_options.undoDirName.isEmpty()) {
+        const Location dest = Location::parse(transfer.destination);
+        if (!dest.isRemote()) {
+            m_undoActive = true;
+            m_undoDestination = dest.path;
+            while (m_undoDestination.size() > 1 && m_undoDestination.endsWith(QLatin1Char('/')))
+                m_undoDestination.chop(1);
+            m_undoDestination = canonicalOrClean(m_undoDestination);
+            if (!m_undoLogged) {
+                m_undoLogged = true;
+                emit log(LogLevel::Info, tr("Undo data: files that this run replaces or deletes are kept in "
+                                            "%1/. The copy can be undone afterwards.")
+                                      .arg(LocalPath::display(m_undoDestination + QLatin1Char('/')
+                                                             + m_options.undoDirName)));
+            }
+        }
+    }
 
     if (m_transfers.size() > 1)
         phase = tr("%1 %2 (%3/%4)").arg(phase, transfer.description).arg(m_index + 1).arg(m_transfers.size());
@@ -548,8 +613,28 @@ void RsyncJob::handleLine(const QString &rawLine)
     emit log(level, line);
 
     if (m_phase == Phase::Copy && !isStatusLine(line)) {
-        const qsizetype arrow = line.indexOf(QStringLiteral(" -> "));
-        emit currentFileChanged(arrow > 0 ? line.left(arrow) : line);
+        // With undo data the copy runs with --itemize-changes: the flags are part of the
+        // line, and the name alone tells the transfer that just started.
+        RsyncJob::ItemizedInfo itemized;
+        const bool isItemized = m_undoActive && parseItemizedLine(line, &itemized);
+        QString current = isItemized ? itemized.name : line;
+
+        if (isItemized && (itemized.type == QLatin1Char('<') || itemized.type == QLatin1Char('>')
+                           || itemized.type == QLatin1Char('c') || itemized.type == QLatin1Char('h'))) {
+            // rsync prints the line before it installs the entry: the entry is new when
+            // it does not exist in the destination yet, and its old version is in the
+            // backup dir otherwise (undo restores it from there). An entry with all
+            // flags '+' is treated as new even if it exists - undo deletes it and moves
+            // the backup copy back, which is the same result (with --checksum rsync
+            // marks an overwritten file the same way as a new one).
+            const bool isNew = itemized.flags == QStringLiteral("+++++++++")
+                || !localExists(m_undoDestination + QLatin1Char('/') + itemized.name);
+            if (isNew)
+                m_undoNew << itemized.name;
+        }
+
+        const qsizetype arrow = current.indexOf(QStringLiteral(" -> "));
+        emit currentFileChanged(arrow > 0 ? current.left(arrow) : current);
     }
 }
 
@@ -887,6 +972,23 @@ void RsyncJob::finish()
     emit currentFileChanged(QString());
     emit statusChanged(QString());
     emit phaseChanged(QString());
+
+    // The undo data of the run, when it could be recorded (and only when the run changed
+    // something: an empty backup dir and no new entries leave nothing to undo). A run
+    // that changed nothing cleans its own backup dir up.
+    if (!m_options.undoDirName.isEmpty() && !m_undoDestination.isEmpty()) {
+        m_undoRecord.destination = m_undoDestination;
+        m_undoRecord.undoDirName = m_options.undoDirName;
+        m_undoRecord.newEntries = QSet<QString>(m_undoNew.cbegin(), m_undoNew.cend()).values();
+        const CopyUndo::Counts counts = CopyUndo::count(m_undoRecord);
+        if (counts.deletions + counts.restorations > 0) {
+            CopyUndo::save(m_undoRecord); // kept in the destination, for a later session
+            emit undoRecordAvailable(m_undoRecord);
+        } else {
+            CopyUndo::discard(m_undoRecord);
+            m_undoRecord.clear();
+        }
+    }
 
     const Summary &s = m_summary;
     QString text = tr("Transfers: %1 ok, %2 with warnings, %3 failed")
