@@ -101,7 +101,12 @@ func (m *Model) footerHints() string {
 	}
 	if m.screen == screenRun {
 		if m.done {
-			return "  " + hint("enter", "返回设置") + "   " + hint("r", "再运行") + "   " + hint("v", "命令") + "   " + hint("↑↓", "日志") + "   " + hint("q", "退出")
+			items := []string{hint("enter", "返回设置"), hint("r", "再运行"), hint("v", "命令")}
+			if m.undoRecord != nil && !m.running && !m.undoRunning {
+				items = append(items, hint("u", "撤回"))
+			}
+			items = append(items, hint("↑↓", "日志"), hint("q", "退出"))
+			return "  " + strings.Join(items, "   ")
 		}
 		cancelHint := hint("esc", "取消")
 		if m.cancelling {
@@ -520,12 +525,12 @@ func (m *Model) renderRun() string {
 	lines = append(lines, status...)
 	// Summary or hints after the log.
 	summaryH := 0
-	if m.summary != nil {
+	if m.summary != nil || m.undoResult != nil {
 		summaryH = 3
 	}
 	logH := max(1, bodyH-len(status)-summaryH-1)
 	lines = append(lines, m.renderLogs(m.width, logH)...)
-	if m.summary != nil {
+	if m.summary != nil || m.undoResult != nil {
 		lines = append(lines, m.renderSummary(m.width)...)
 	}
 	if len(lines) > bodyH {
@@ -549,7 +554,13 @@ func (m *Model) renderRunStatus(width int) []string {
 	if m.done {
 		phase = m.completionLabel()
 		phaseColor = cGreen
-		if m.summary != nil {
+		if m.undoResult != nil {
+			if m.undoResult.Cancelled {
+				phaseColor = cYellow
+			} else if m.undoResult.Failed > 0 {
+				phaseColor = cRed
+			}
+		} else if m.summary != nil {
 			if m.summary.Warnings > 0 && m.summary.Failed == 0 && m.summary.Differences == 0 && m.summary.VerifyFailed == 0 {
 				phaseColor = cYellow
 			}
@@ -714,6 +725,16 @@ func (m *Model) renderLogLine(entry rsync.LogLine, width int) string {
 }
 
 func (m *Model) completionLabel() string {
+	if m.undoResult != nil {
+		switch {
+		case m.undoResult.Cancelled:
+			return "撤回已取消"
+		case m.undoResult.Failed > 0:
+			return "撤回未完成"
+		default:
+			return "已撤回"
+		}
+	}
 	if m.summary == nil {
 		return "已结束"
 	}
@@ -735,6 +756,9 @@ func (m *Model) completionLabel() string {
 }
 
 func (m *Model) renderSummary(width int) []string {
+	if m.undoResult != nil {
+		return m.renderUndoSummary(width)
+	}
 	s := m.summary
 	status := "完成"
 	color := cGreen
@@ -765,6 +789,35 @@ func (m *Model) renderSummary(width int) []string {
 		line3 = "  " + styMuted.Render("任务已取消。")
 	} else if s.Success() {
 		line3 = "  " + styGreen.Render("全部完成。")
+	}
+	return []string{line1, line2, line3}
+}
+
+// renderUndoSummary is the result panel after an undo.
+func (m *Model) renderUndoSummary(width int) []string {
+	res := m.undoResult
+	status := "已撤回"
+	color, glyph := cGreen, "✓"
+	if res.Cancelled {
+		status, color, glyph = "已取消", cYellow, "!"
+	} else if res.Failed > 0 {
+		status, color, glyph = "未完成", cRed, "✗"
+	}
+	line1 := "  " + lipgloss.NewStyle().Foreground(color).Bold(true).Render(glyph+" "+status) +
+		styMuted.Render("  ·  "+humanDuration(m.elapsed))
+	line2 := "  " + styMuted.Render(fmt.Sprintf("已删除新建 %d 项 · 已还原旧文件 %d 项", res.Deleted, res.Restored))
+	if res.Failed > 0 {
+		line2 += styRed.Render(fmt.Sprintf("  ·  失败 %d", res.Failed))
+	}
+	line3 := ""
+	if res.LeftInBackupDir != "" {
+		line3 = "  " + styYellow.Render("无法还原的旧版本仍在备份目录中，再按 u 可继续撤回。")
+	} else if res.Cancelled {
+		line3 = "  " + styMuted.Render("目标处于复制前后的中间状态，再按 u 会从这里继续。")
+	} else if res.OK() {
+		line3 = "  " + styGreen.Render("目标已恢复到复制前的状态。")
+	} else {
+		line3 = "  " + styRed.Render("部分内容未能撤回，详见日志。")
 	}
 	return []string{line1, line2, line3}
 }

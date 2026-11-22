@@ -53,6 +53,7 @@ func optionRows() []optionRow {
 		{kind: rowHeader, title: "校验与清理"},
 		{id: "verifyAfter", kind: rowBool, title: "复制后校验", flag: "--checksum 比较"},
 		{id: "checksum", kind: rowBool, title: "按校验和比较", flag: "-c"},
+		{id: "allowUndo", kind: rowBool, title: "允许复制后撤回", flag: "--backup 保存旧文件"},
 		{id: "removeSourceFiles", kind: rowBool, title: "删除源文件（移动）", flag: "--remove-source-files"},
 		{id: "removeSourceDirs", kind: rowBool, title: "删除空的源目录", flag: "移动后", indent: true},
 
@@ -123,6 +124,14 @@ func (m *Model) optionState(id string) rowState {
 		return rowState{checked: o.DryRun}
 	case "verifyAfter":
 		return rowState{checked: o.VerifyAfter, note: noteIf(o.VerifyAfter && o.DryRun, "试运行下跳过")}
+	case "allowUndo":
+		note := ""
+		if o.AllowUndo && o.DryRun {
+			note = "试运行下跳过"
+		} else if o.AllowUndo && o.RemoveSourceFiles {
+			note = "移动不支持"
+		}
+		return rowState{checked: o.AllowUndo, note: note}
 	case "numericIds":
 		return rowState{checked: o.NumericIDs}
 	case "oneFileSystem":
@@ -302,6 +311,13 @@ func (m *Model) toggleCurrentOption(edit bool) {
 		o.DryRun = !o.DryRun
 	case "verifyAfter":
 		o.VerifyAfter = !o.VerifyAfter
+	case "allowUndo":
+		o.AllowUndo = !o.AllowUndo
+		if o.AllowUndo {
+			m.setToast("复制后可按 u 撤回（旧文件保存在目标中）", false)
+		} else {
+			m.setToast("已关闭复制后撤回", false)
+		}
 	case "numericIds":
 		o.NumericIDs = !o.NumericIDs
 	case "oneFileSystem":

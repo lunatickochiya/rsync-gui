@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,6 +70,18 @@ type runEventMsg struct {
 
 type runClosedMsg struct{}
 
+// undoProgressMsg is a live status of a running undo.
+type undoProgressMsg struct {
+	permille int
+	status   string
+}
+
+// undoDoneMsg ends an undo.
+type undoDoneMsg struct {
+	record rsync.UndoRecord
+	result rsync.UndoResult
+}
+
 // Model is the root Bubble Tea model.
 type Model struct {
 	width  int
@@ -122,6 +135,13 @@ type Model struct {
 	elapsed    time.Duration
 	autoRun    bool
 
+	// Undo of the last finished run (see rsync.UndoRecord): nil when there is
+	// none. undoEvents streams the progress of a running undo.
+	undoRecord  *rsync.UndoRecord
+	undoResult  *rsync.UndoResult
+	undoRunning bool
+	undoEvents  <-chan undoMsg
+
 	rsyncVersion string
 	wsl          bool
 }
@@ -165,6 +185,23 @@ func New(opts config.Options, sources []string, dest string, cfg config.AppConfi
 
 	m.rsyncVersion = detectRsyncVersion(opts.Program)
 	m.clampSourceCursor()
+
+	// A copy run of the previous session that can still be undone: the record
+	// file is inside the destination, only the pointer is remembered here.
+	if cfg.UndoRecordPath != "" {
+		if rec, ok := rsync.UndoLoad(rsync.UnescapeForRecord(cfg.UndoRecordPath)); ok {
+			deletions, _, backupExists := rsync.UndoCounts(rec)
+			if backupExists || deletions > 0 {
+				m.undoRecord = &rec
+				m.setToast("上次的复制仍可撤回（按 u）："+location.DisplayPath(rec.Destination), false)
+			} else {
+				_, _ = rsync.UndoDiscard(rec) // nothing usable left
+				m.setUndoRecord(nil)
+			}
+		} else {
+			m.setUndoRecord(nil)
+		}
+	}
 	return m
 }
 
@@ -214,6 +251,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.log(rsync.LevelError, "传输进程意外结束。")
 		}
 		return m, nil
+	case undoProgressMsg:
+		if !m.undoRunning {
+			return m, nil
+		}
+		m.state.Indeterminate = false
+		m.state.Percent = float64(msg.permille) / 10
+		if msg.status != "" {
+			m.state.CurrentFile = msg.status
+		}
+		m.elapsed = time.Since(m.startedAt)
+		return m, waitUndo(m.undoEvents)
+	case undoDoneMsg:
+		return m.finishUndo(msg.record, msg.result)
 	case tea.MouseMsg:
 		return m.handleMouse(msg)
 	case tea.KeyMsg:
@@ -244,6 +294,13 @@ func (m *Model) handleRunEvent(ev rsync.Event) (tea.Model, tea.Cmd) {
 		if len(m.logs) > 5000 {
 			m.logs = m.logs[len(m.logs)-5000:]
 		}
+	case rsync.EventUndoAvailable:
+		m.undoRecord = ev.UndoRecord
+		m.undoResult = nil
+		deletions, restorations, _ := rsync.UndoCounts(*ev.UndoRecord)
+		m.log(rsync.LevelInfo, fmt.Sprintf(
+			"这次复制可以撤回：将删除新建的 %d 项，还原被覆盖或删除的 %d 项。按 u 撤回。",
+			deletions, restorations))
 	case rsync.EventDone:
 		m.running = false
 		m.done = true
@@ -339,6 +396,10 @@ func (m *Model) handleSetupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.setToast("试运行已关闭", false)
 		}
+	case "u":
+		if m.undoRecord != nil && !m.running && !m.undoRunning {
+			return m, m.requestUndo()
+		}
 	case "esc":
 		m.toast = ""
 	case "space", "enter":
@@ -396,6 +457,10 @@ func (m *Model) handleRunKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(m.commands) > 0 {
 			m.modal = modalState{kind: modalCommand, title: "执行的命令", command: strings.Join(m.commands, "\n\n"), hint: "↑↓ 滚动 · enter 关闭"}
 		}
+	case "u":
+		if !m.running && m.undoRecord != nil && !m.undoRunning {
+			return m, m.requestUndo()
+		}
 	case "r":
 		if !m.running {
 			return m, m.requestStart(false)
@@ -440,6 +505,10 @@ func (m *Model) startPlan(plan *rsync.Plan) tea.Cmd {
 	m.pendingPlan = nil
 	m.plan = plan
 	m.opts = plan.Options
+	// One undo at a time: the data of the previous run is removed before this one
+	// starts, so that rsync does not see it as part of the destination.
+	m.discardUndoRecord()
+	m.undoResult = nil
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.events = rsync.Start(ctx, plan)
@@ -468,9 +537,163 @@ func (m *Model) cancelRun() {
 		return
 	}
 	m.cancelling = true
+	if m.undoRunning {
+		m.cancel()
+		return
+	}
 	m.cancel()
 	m.log(rsync.LevelWarning, "正在取消…")
 	m.setToast("正在取消，等待 rsync 退出…", true)
+}
+
+// undoMsg is a progress or completion message of a running undo.
+type undoMsg interface{}
+
+func waitUndo(ch <-chan undoMsg) tea.Cmd {
+	return func() tea.Msg {
+		msg, ok := <-ch
+		if !ok {
+			return nil
+		}
+		return msg
+	}
+}
+
+// requestUndo asks for confirmation, then undo the last finished copy.
+func (m *Model) requestUndo() tea.Cmd {
+	if m.undoRecord == nil {
+		return nil
+	}
+	rec := *m.undoRecord
+	deletions, restorations, backupExists := rsync.UndoCounts(rec)
+	if !backupExists && deletions == 0 {
+		m.openMessage("撤回复制", "已没有可撤回的内容："+location.DisplayPath(rec.UndoDir())+" 中的撤回数据已不存在。")
+		m.clearUndoRecord()
+		return nil
+	}
+	if deletions == 0 && restorations == 0 {
+		m.clearUndoRecord() // nothing changed, or it was undone already
+		return nil
+	}
+	body := fmt.Sprintf("把 %s 恢复到复制前的状态？\n\n"+
+		"• 删除这次新建的条目：%d 项\n"+
+		"• 还原被覆盖或删除的旧文件：%d 项\n\n"+
+		"源不会被改动。此操作无法重做。",
+		location.DisplayPath(rec.Destination), deletions, restorations)
+	m.modal = modalState{
+		kind: modalConfirm, title: "撤回这次复制？", body: body,
+		action: "undo-copy", confirmLabel: "撤回",
+	}
+	return nil
+}
+
+func (m *Model) startUndo() tea.Cmd {
+	if m.undoRecord == nil || m.running || m.undoRunning {
+		return nil
+	}
+	rec := *m.undoRecord
+	m.modal = modalState{}
+	m.screen = screenRun
+	m.running = true
+	m.done = false
+	m.cancelling = false
+	m.summary = nil
+	m.undoResult = nil
+	m.undoRunning = true
+	m.speeds = nil
+	m.logScroll = 0
+	m.state = rsync.State{Phase: "撤回", Indeterminate: true}
+	m.startedAt = time.Now()
+	m.elapsed = 0
+	m.log(rsync.LevelInfo, "--- 撤回：恢复 "+location.DisplayPath(rec.Destination)+" ---")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancel = cancel
+	ch := make(chan undoMsg, 64)
+	m.undoEvents = ch
+	go func() {
+		defer close(ch)
+		result := rsync.UndoExecute(ctx, rec, func(permille int, status string) {
+			select {
+			case ch <- undoProgressMsg{permille: permille, status: status}:
+			case <-ctx.Done():
+			}
+		})
+		select {
+		case ch <- undoDoneMsg{record: rec, result: result}:
+		case <-ctx.Done():
+		}
+	}()
+	return waitUndo(ch)
+}
+
+func (m *Model) finishUndo(rec rsync.UndoRecord, result rsync.UndoResult) (tea.Model, tea.Cmd) {
+	m.running = false
+	m.done = true
+	m.cancelling = false
+	m.undoRunning = false
+	m.cancel = nil
+	m.state.Indeterminate = false
+	m.state.CurrentFile = ""
+	m.state.Percent = 100
+	m.elapsed = time.Since(m.startedAt)
+	for _, problem := range result.Problems {
+		m.log(rsync.LevelWarning, problem)
+	}
+	if result.Cancelled {
+		m.log(rsync.LevelWarning, "撤回已取消。目标目前处于两种状态之间；再按 u 会从这里继续。")
+	} else if result.Failed == 0 {
+		m.log(rsync.LevelSuccess, fmt.Sprintf("已撤回：删除 %d 项，还原 %d 项。", result.Deleted, result.Restored))
+	} else {
+		m.log(rsync.LevelError, fmt.Sprintf("已撤回：删除 %d 项，还原 %d 项，%d 项未能撤回。",
+			result.Deleted, result.Restored, result.Failed))
+	}
+	if result.LeftInBackupDir != "" {
+		m.log(rsync.LevelWarning, "无法还原的旧版本仍保存在 "+location.DisplayPath(filepath.Join(rec.Destination, result.LeftInBackupDir))+"。")
+	}
+	m.undoResult = &result
+	if result.OK() {
+		m.clearUndoRecord() // the backup dir is empty and removed now
+	} else {
+		// Keep the record: another undo finishes the rest.
+		m.setUndoRecord(&rec)
+	}
+	return m, nil
+}
+
+// setUndoRecord remembers a run that can be undone (the pointer to the record
+// file in the config keeps it across a restart of the TUI).
+func (m *Model) setUndoRecord(rec *rsync.UndoRecord) {
+	m.undoRecord = rec
+	if rec != nil {
+		// The path may contain bytes that are not valid UTF-8; the config is
+		// JSON, so it is stored in the escaped form (see rsync.EscapeForRecord).
+		m.cfg.UndoRecordPath = rsync.EscapeForRecord(rec.RecordPath())
+	} else {
+		m.cfg.UndoRecordPath = ""
+	}
+	_ = m.cfg.Save()
+}
+
+func (m *Model) clearUndoRecord() {
+	m.undoRecord = nil
+	m.setUndoRecord(nil)
+}
+
+// discardUndoRecord deletes the undo data of the previous run before a new one
+// starts, so that rsync does not see it as part of the destination.
+func (m *Model) discardUndoRecord() {
+	if m.undoRecord == nil {
+		return
+	}
+	rec := *m.undoRecord
+	if problems, ok := rsync.UndoDiscard(rec); !ok {
+		for _, problem := range problems {
+			m.log(rsync.LevelWarning, problem)
+		}
+		m.log(rsync.LevelWarning, "上次运行的撤回数据未能完全删除："+location.DisplayPath(rec.UndoDir()))
+	}
+	m.clearUndoRecord()
 }
 
 func planCommands(plan *rsync.Plan) []string {

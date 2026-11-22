@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/lunatickochiya/rsync-gui/tui/internal/config"
 	"github.com/lunatickochiya/rsync-gui/tui/internal/location"
@@ -202,6 +203,17 @@ func buildPlan(opts config.Options, sourceStrings []string, destination string, 
 		if fat, _ := isFATFileSystem(dest.Path, opts.DryRun); fat {
 			opts.ModifyWindow = 1
 		}
+	}
+
+	// Undo data of a real run (see Options.AllowUndo): the name is fixed here, so
+	// that the commands shown in the log are the ones that actually run. Not for
+	// dry runs (nothing changes), moves (the sources are gone - undoing only the
+	// destination would destroy the only remaining copy) and remote destinations
+	// (the files that the run replaces cannot be kept there). The runner logs why
+	// undo is skipped; the preview gets no name and shows no undo flags.
+	if createDest && opts.AllowUndo && !opts.DryRun && !opts.RemoveSourceFiles &&
+		!plan.DestinationRemote && opts.UndoUsable() {
+		opts.UndoDirName = ".rsync-gui-undo-" + time.Now().Format("20060102-150405")
 	}
 	plan.Options = opts
 	return plan, nil

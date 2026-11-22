@@ -232,6 +232,8 @@ func (m *Model) executeConfirm() tea.Cmd {
 		}
 	case "cancel-run":
 		m.cancelRun()
+	case "undo-copy":
+		return m.startUndo()
 	case "clear-sources":
 		m.sources = nil
 		m.sourceCursor = 0
