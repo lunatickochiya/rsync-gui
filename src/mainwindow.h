@@ -82,6 +82,9 @@ private:
     void addTypedSource();
     void pasteSources();
     void removeSelectedSources();
+    // Edits the path of one source entry (from a button, the context menu, F2 or a
+    // double-click). `item` comes from the double-click, otherwise the current one.
+    void editSelectedSource(QListWidgetItem *item = nullptr);
     // `builtIn`: the built-in file dialog, otherwise the preferred one.
     void browseFiles(bool builtIn = false);
     void browseDirectory(bool builtIn = false);
@@ -120,6 +123,7 @@ private:
     QLineEdit *m_sourceEdit = nullptr;
     QLabel *m_sourceInfo = nullptr;
     QPushButton *m_removeSourcesButton = nullptr;
+    QPushButton *m_editSourcesButton = nullptr;
     QPushButton *m_clearSourcesButton = nullptr;
     QGroupBox *m_sourceBox = nullptr;
 

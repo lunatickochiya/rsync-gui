@@ -17,6 +17,7 @@ be passed as additional arguments.
 - **source list** (files and directories, local or remote): add with buttons, type/paste a path
   (also `file://...`, `sftp://[user@]host[:port]/path`, rsync's `[user@]host:path`, quoted, with `~`),
   paste many paths (`Ctrl+V`, including files copied in Dolphin), drag & drop, paths on the command line,
+  edit an entry later (*Edit...*, a double-click or F2),
 - **destination**: a local directory (created if missing) or a remote one, with a list of
   recently used destinations,
 - the most useful **rsync options**: `-a` or its parts separately (`-r`, `-l`, `-p`, `-t`, `-g`, `-o`,

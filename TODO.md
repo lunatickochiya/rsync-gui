@@ -5,7 +5,7 @@
 - [x] Git repository (user `fapped`), MIT license
 - [x] CMake + Qt 6 Widgets, `rsynccore` library, QtTest tests (`ctest`)
 - [x] Source list: local paths, `file://`, `sftp://` (with user and port), `user@host:path`;
-      add/paste/drop/command line
+      add/paste/drop/command line; edit an entry (*Edit...*, a double-click or F2)
 - [x] Destination with recent destinations, created if missing, remote destinations
 - [x] Supported subset of rsync options + additional arguments field
 - [x] Parts of `-a` (`-rlptgoD`) as separate checkboxes, preset `rsync-copy-portable` (`-rltvhP`)

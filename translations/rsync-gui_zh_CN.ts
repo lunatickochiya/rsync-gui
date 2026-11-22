@@ -162,1102 +162,1135 @@ Read as Latin-1: %2</source>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/mainwindow.cpp" line="63"/>
+        <location filename="../src/mainwindow.cpp" line="64"/>
         <source>Rsync GUI settings (*.json);;All files (*)</source>
         <translation>Rsync GUI 设置 (*.json);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="68"/>
+        <location filename="../src/mainwindow.cpp" line="69"/>
         <source>rsync options</source>
         <translation>rsync 选项</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="76"/>
+        <location filename="../src/mainwindow.cpp" line="77"/>
         <source>Rsync GUI</source>
         <translation>Rsync GUI 中文版</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="96"/>
+        <location filename="../src/mainwindow.cpp" line="97"/>
         <source>Sources</source>
         <translation>源</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="106"/>
+        <location filename="../src/mainwindow.cpp" line="107"/>
         <source>Paste paths</source>
         <translation>粘贴路径</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="109"/>
+        <location filename="../src/mainwindow.cpp" line="113"/>
         <source>Remove from list</source>
         <translation>从列表中移除</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="117"/>
+        <location filename="../src/mainwindow.cpp" line="122"/>
         <source>Type or paste a path (also user@host:/path or sftp://...) and press Enter</source>
         <translation>输入或粘贴路径（也支持 user@host:/path 或 sftp://...），然后按回车</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="120"/>
+        <location filename="../src/mainwindow.cpp" line="125"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="126"/>
+        <location filename="../src/mainwindow.cpp" line="131"/>
         <source>Add files...</source>
         <translation>添加文件...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="127"/>
+        <location filename="../src/mainwindow.cpp" line="132"/>
         <source>Add directory...</source>
         <translation>添加目录...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="128"/>
+        <location filename="../src/mainwindow.cpp" line="133"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="129"/>
+        <location filename="../src/mainwindow.cpp" line="134"/>
         <source>Add paths from the clipboard (one per line, or files copied in a file manager)</source>
         <translation>从剪贴板添加路径（每行一个，或在文件管理器中复制的文件）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="130"/>
+        <location filename="../src/mainwindow.cpp" line="135"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="131"/>
+        <location filename="../src/mainwindow.cpp" line="138"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="135"/>
+        <location filename="../src/mainwindow.cpp" line="142"/>
         <source>Built-in file dialog</source>
         <translation>内置文件对话框</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="136"/>
+        <location filename="../src/mainwindow.cpp" line="143"/>
         <source>The built-in file dialog, which can also choose names that are not valid UTF-8</source>
         <translation>内置文件对话框，也可以选择非 UTF-8 名称</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="140"/>
+        <location filename="../src/mainwindow.cpp" line="147"/>
         <source>Add files with the built-in dialog...</source>
         <translation>使用内置对话框添加文件...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="143"/>
+        <location filename="../src/mainwindow.cpp" line="150"/>
         <source>Add directory with the built-in dialog...</source>
         <translation>使用内置对话框添加目录...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="145"/>
+        <location filename="../src/mainwindow.cpp" line="152"/>
         <source>Always use the built-in dialog</source>
         <translation>始终使用内置对话框</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="146"/>
+        <location filename="../src/mainwindow.cpp" line="153"/>
         <source>Also for Add files..., Add directory... and Browse... of the destination</source>
         <translation>同样用于“添加文件...”、“添加目录...”和目标的“浏览...”</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="166"/>
+        <location filename="../src/mainwindow.cpp" line="174"/>
         <source>Destination directory</source>
         <translation>目标目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="174"/>
+        <location filename="../src/mainwindow.cpp" line="182"/>
         <source>Local directory, user@host:/path or sftp://host/path</source>
         <translation>本地目录、user@host:/path 或 sftp://host/path</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="176"/>
+        <location filename="../src/mainwindow.cpp" line="184"/>
         <source>The sources are copied into this directory. Recently used destinations are available in the drop-down list.</source>
         <translation>源将复制到此目录。最近使用的目标可在下拉列表中选择。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="178"/>
-        <location filename="../src/mainwindow.cpp" line="210"/>
-        <location filename="../src/mainwindow.cpp" line="223"/>
-        <location filename="../src/mainwindow.cpp" line="358"/>
+        <location filename="../src/mainwindow.cpp" line="186"/>
+        <location filename="../src/mainwindow.cpp" line="218"/>
+        <location filename="../src/mainwindow.cpp" line="231"/>
+        <location filename="../src/mainwindow.cpp" line="366"/>
         <source>Browse...</source>
         <translation>浏览...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="197"/>
+        <location filename="../src/mainwindow.cpp" line="205"/>
         <source>...</source>
         <translation>...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="198"/>
+        <location filename="../src/mainwindow.cpp" line="206"/>
         <source>Select the rsync executable</source>
         <translation>选择 rsync 可执行文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="201"/>
+        <location filename="../src/mainwindow.cpp" line="209"/>
         <source>Program:</source>
         <translation>程序：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="230"/>
+        <location filename="../src/mainwindow.cpp" line="238"/>
         <source>Archive mode (-a)</source>
         <translation>归档模式 (-a)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="231"/>
+        <location filename="../src/mainwindow.cpp" line="239"/>
         <source>-a, --archive: recursive, preserve symlinks, permissions, times, group, owner and special files (-rlptgoD).
 Turn it off to choose the parts separately, e.g. -rlt for FAT/exFAT/NTFS drives or a NAS without permissions and owners.</source>
         <translation>-a, --archive：递归并保留符号链接、权限、时间、组、所有者和特殊文件（-rlptgoD）。
 关闭后可单独选择各部分，例如对 FAT/exFAT/NTFS 驱动器或无权限/所有者的 NAS 使用 -rlt。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="234"/>
+        <location filename="../src/mainwindow.cpp" line="242"/>
         <source>Recursive (-r)</source>
         <translation>递归 (-r)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="235"/>
+        <location filename="../src/mainwindow.cpp" line="243"/>
         <source>-r, --recursive: copy directories recursively</source>
         <translation>-r, --recursive：递归复制目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="236"/>
+        <location filename="../src/mainwindow.cpp" line="244"/>
         <source>Symlinks (-l)</source>
         <translation>符号链接 (-l)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="237"/>
+        <location filename="../src/mainwindow.cpp" line="245"/>
         <source>-l, --links: copy symlinks as symlinks (without it they are skipped)</source>
         <translation>-l, --links：将符号链接作为符号链接复制（否则会被跳过）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="238"/>
+        <location filename="../src/mainwindow.cpp" line="246"/>
         <source>Permissions (-p)</source>
         <translation>权限 (-p)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="239"/>
+        <location filename="../src/mainwindow.cpp" line="247"/>
         <source>-p, --perms: preserve permissions</source>
         <translation>-p, --perms：保留权限</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="240"/>
+        <location filename="../src/mainwindow.cpp" line="248"/>
         <source>Times (-t)</source>
         <translation>时间 (-t)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="241"/>
+        <location filename="../src/mainwindow.cpp" line="249"/>
         <source>-t, --times: preserve modification times. Without it every run copies all files again, because the times never match. On FAT/exFAT add --modify-window=1.</source>
         <translation>-t, --times：保留修改时间。不启用时，每次运行都会重新复制所有文件，因为时间永远不匹配。FAT/exFAT 上请加 --modify-window=1。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="243"/>
+        <location filename="../src/mainwindow.cpp" line="251"/>
         <source>Group (-g)</source>
         <translation>组 (-g)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="244"/>
+        <location filename="../src/mainwindow.cpp" line="252"/>
         <source>-g, --group: preserve the group</source>
         <translation>-g, --group：保留组</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="245"/>
+        <location filename="../src/mainwindow.cpp" line="253"/>
         <source>Owner (-o)</source>
         <translation>所有者 (-o)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="246"/>
+        <location filename="../src/mainwindow.cpp" line="254"/>
         <source>-o, --owner: preserve the owner (requires root on the receiving side)</source>
         <translation>-o, --owner：保留所有者（接收端需要 root）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="247"/>
+        <location filename="../src/mainwindow.cpp" line="255"/>
         <source>Devices, specials (-D)</source>
         <translation>设备、特殊文件 (-D)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="248"/>
+        <location filename="../src/mainwindow.cpp" line="256"/>
         <source>-D: preserve device files and special files (FIFOs, sockets)</source>
         <translation>-D：保留设备文件和特殊文件（FIFO、套接字）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="249"/>
+        <location filename="../src/mainwindow.cpp" line="257"/>
         <source>Hard links (-H)</source>
         <translation>硬链接 (-H)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="250"/>
+        <location filename="../src/mainwindow.cpp" line="258"/>
         <source>-H, --hard-links: preserve hard links</source>
         <translation>-H, --hard-links：保留硬链接</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="251"/>
+        <location filename="../src/mainwindow.cpp" line="259"/>
         <source>ACLs (-A)</source>
         <translation>ACL (-A)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="252"/>
+        <location filename="../src/mainwindow.cpp" line="260"/>
         <source>-A, --acls: preserve ACLs (implies -p)</source>
         <translation>-A, --acls：保留 ACL（隐含 -p）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="253"/>
+        <location filename="../src/mainwindow.cpp" line="261"/>
         <source>Extended attributes (-X)</source>
         <translation>扩展属性 (-X)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="254"/>
+        <location filename="../src/mainwindow.cpp" line="262"/>
         <source>-X, --xattrs: preserve extended attributes</source>
         <translation>-X, --xattrs：保留扩展属性</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="262"/>
+        <location filename="../src/mainwindow.cpp" line="270"/>
         <source>Copy:</source>
         <translation>复制方式：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="265"/>
+        <location filename="../src/mainwindow.cpp" line="273"/>
         <source>Replace files that differ</source>
         <translation>替换有差异的文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="266"/>
+        <location filename="../src/mainwindow.cpp" line="274"/>
         <source>Skip files that are newer in the destination (-u)</source>
         <translation>跳过目标中较新的文件 (-u)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="267"/>
+        <location filename="../src/mainwindow.cpp" line="275"/>
         <source>Never replace existing files (--ignore-existing)</source>
         <translation>从不替换已存在文件 (--ignore-existing)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="269"/>
+        <location filename="../src/mainwindow.cpp" line="277"/>
         <source>Existing files:</source>
         <translation>已存在文件：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="271"/>
+        <location filename="../src/mainwindow.cpp" line="279"/>
         <source>Compare files by checksum, not by size and modification time (-c)</source>
         <translation>按校验和比较文件，而不是按大小和修改时间 (-c)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="272"/>
+        <location filename="../src/mainwindow.cpp" line="280"/>
         <source>-c, --checksum: read every file on both sides to decide what to transfer. Slower, but detects files that differ despite the same size and time.</source>
         <translation>-c, --checksum：读取两端的每个文件来决定传输内容。速度较慢，但能发现大小和时间相同但内容不同的文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="278"/>
+        <location filename="../src/mainwindow.cpp" line="286"/>
         <source>Per file (--progress)</source>
         <translation>每个文件 (--progress)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="279"/>
+        <location filename="../src/mainwindow.cpp" line="287"/>
         <source>Overall (--info=progress2)</source>
         <translation>总体 (--info=progress2)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="280"/>
+        <location filename="../src/mainwindow.cpp" line="288"/>
         <source>None</source>
         <translation>无</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="281"/>
+        <location filename="../src/mainwindow.cpp" line="289"/>
         <source>Per file: progress of each file (with --partial this is -P). Overall: one progress for the whole transfer, better for many small files.</source>
         <translation>每个文件：显示每个文件的进度（配合 --partial 即为 -P）。总体：整个传输只显示一个进度，适合大量小文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="283"/>
+        <location filename="../src/mainwindow.cpp" line="291"/>
         <source>Keep partial files (--partial)</source>
         <translation>保留部分文件 (--partial)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="284"/>
+        <location filename="../src/mainwindow.cpp" line="292"/>
         <source>--partial: keep partially transferred files, so that an interrupted transfer can be resumed faster</source>
         <translation>--partial：保留传输了一部分的文件，使中断的传输可以更快恢复</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="286"/>
+        <location filename="../src/mainwindow.cpp" line="294"/>
         <source>List files (-v)</source>
         <translation>列出文件 (-v)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="287"/>
+        <location filename="../src/mainwindow.cpp" line="295"/>
         <source>Human-readable numbers (-h)</source>
         <translation>人类可读数字 (-h)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="292"/>
+        <location filename="../src/mainwindow.cpp" line="300"/>
         <source>Progress:</source>
         <translation>进度：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="295"/>
+        <location filename="../src/mainwindow.cpp" line="303"/>
         <source>Compress (-z)</source>
         <translation>压缩 (-z)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="296"/>
+        <location filename="../src/mainwindow.cpp" line="304"/>
         <source>-z, --compress: compress data during the transfer (useful for slow networks only)</source>
         <translation>-z, --compress：传输时压缩数据（仅建议用于慢速网络）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="297"/>
+        <location filename="../src/mainwindow.cpp" line="305"/>
         <source>Bandwidth limit:</source>
         <translation>带宽限制：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="299"/>
+        <location filename="../src/mainwindow.cpp" line="307"/>
         <source>e.g. 500 (KiB/s), 10M</source>
         <translation>例如：500（KiB/s）、10M</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="300"/>
+        <location filename="../src/mainwindow.cpp" line="308"/>
         <source>--bwlimit=RATE: limit the I/O bandwidth, KiB per second by default</source>
         <translation>--bwlimit=RATE：限制 I/O 带宽，默认单位为 KiB/s</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="305"/>
+        <location filename="../src/mainwindow.cpp" line="313"/>
         <source>Transfer:</source>
         <translation>传输：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="308"/>
+        <location filename="../src/mainwindow.cpp" line="316"/>
         <source>Custom (-e)</source>
         <translation>自定义 (-e)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="311"/>
+        <location filename="../src/mainwindow.cpp" line="319"/>
         <source>-e, --rsh=COMMAND: the remote shell used for user@host:path locations. The port of sftp:// URLs is added automatically (-p PORT).</source>
         <translation>-e, --rsh=COMMAND：用于 user@host:path 位置的远程 shell。sftp:// URL 的端口会自动添加（-p PORT）。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="315"/>
+        <location filename="../src/mainwindow.cpp" line="323"/>
         <source>Remote shell:</source>
         <translation>远程 shell：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="317"/>
+        <location filename="../src/mainwindow.cpp" line="325"/>
         <source>Copy the contents of source directories, not the directories themselves</source>
         <translation>复制源目录的内容，而不是目录本身</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="319"/>
+        <location filename="../src/mainwindow.cpp" line="327"/>
         <source>Adds a trailing &quot;/&quot; to local source directories: &quot;rsync -a dir/ dest/&quot; copies the files of dir directly into dest.</source>
         <translation>在本地源目录后添加 &quot;/&quot;：&quot;rsync -a dir/ dest/&quot; 会把 dir 里的文件直接复制到 dest。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="321"/>
+        <location filename="../src/mainwindow.cpp" line="329"/>
         <source>Directories:</source>
         <translation>目录：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="364"/>
+        <location filename="../src/mainwindow.cpp" line="372"/>
         <source>Delete files in the destination that are not in the source (--delete)</source>
         <translation>删除目标中源里不存在的文件 (--delete)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="365"/>
+        <location filename="../src/mainwindow.cpp" line="373"/>
         <source>--delete: makes the destination an exact mirror of the source directories. Files that exist only in the destination are deleted!</source>
         <translation>--delete：使目标成为源目录的精确镜像。只存在于目标中的文件会被删除！</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="367"/>
+        <location filename="../src/mainwindow.cpp" line="375"/>
         <source>Remove source files after copying - move (--remove-source-files)</source>
         <translation>复制后删除源文件 - 移动 (--remove-source-files)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="368"/>
+        <location filename="../src/mainwindow.cpp" line="376"/>
         <source>--remove-source-files: removes the transferred files from the source (rsync leaves the directories in place)</source>
         <translation>--remove-source-files：从源中删除已传输的文件（rsync 会保留目录）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="370"/>
+        <location filename="../src/mainwindow.cpp" line="378"/>
         <source>Also remove source directories that are left empty</source>
         <translation>同时删除变空的源目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="371"/>
+        <location filename="../src/mainwindow.cpp" line="379"/>
         <source>After a successful move, removes the emptied directories of local sources (only empty ones - a directory with excluded or failed files stays). With &quot;Copy the contents&quot; the source directory itself stays.</source>
         <translation>成功移动后，删除本地源中变空的目录（仅删除空目录 - 含有被排除文件或失败文件的目录会保留）。启用“复制内容”时，源目录本身会保留。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="374"/>
+        <location filename="../src/mainwindow.cpp" line="382"/>
         <source>Dry run - only show what would be done (-n)</source>
         <translation>演练 - 只显示将要执行的操作 (-n)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="375"/>
+        <location filename="../src/mainwindow.cpp" line="383"/>
         <source>Advanced:</source>
         <translation>高级：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="382"/>
+        <location filename="../src/mainwindow.cpp" line="390"/>
         <source>FAT destinations: compare file times with a tolerance of 1 s (--modify-window=1, detected automatically)</source>
         <translation>FAT 目标：文件时间比较容差为 1 秒（--modify-window=1，自动检测）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="385"/>
+        <location filename="../src/mainwindow.cpp" line="393"/>
         <source>FAT keeps file times only to 2 seconds - without the tolerance rsync copies every file with an odd second again on every run. Before copying, a temporary file in the destination shows whether its times are rounded.
 Turned off, --modify-window is never added automatically.</source>
         <translation>FAT 只保留 2 秒精度的文件时间 - 没有容差时，rsync 每次运行都会重新复制秒数为奇数的文件。复制前会在目标中创建一个临时文件，检查其时间是否被取整。
 关闭后，绝不会自动添加 --modify-window。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="392"/>
+        <location filename="../src/mainwindow.cpp" line="400"/>
         <source>Verify after copying (compare checksums of the source and the destination)</source>
         <translation>复制后校验（比较源和目标的校验和）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="394"/>
+        <location filename="../src/mainwindow.cpp" line="402"/>
         <source>After a successful transfer, runs rsync again as a dry run with --checksum --itemize-changes. Every file is read on both sides; any file that differs or is missing is reported.
 When moving, the sources are removed only after the verification has passed.</source>
         <translation>成功传输后，会以 --checksum --itemize-changes 再次以演练方式运行 rsync。两端的每个文件都会被读取；任何不同或缺失的文件都会被报告。
 移动时，只有在校验通过后才会删除源文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="398"/>
+        <location filename="../src/mainwindow.cpp" line="406"/>
         <source>Verify:</source>
         <translation>校验：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="206"/>
+        <location filename="../src/mainwindow.cpp" line="214"/>
         <source>e.g. /home/user/rsync-excludes.txt</source>
         <translation>例如 /home/user/rsync-excludes.txt</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="207"/>
+        <location filename="../src/mainwindow.cpp" line="110"/>
+        <location filename="../src/mainwindow.cpp" line="136"/>
+        <source>Edit...</source>
+        <translation>编辑...</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="137"/>
+        <source>Edit the path of the selected source (also with a double-click or F2)</source>
+        <translation>编辑选中的源的路径（也可双击或按 F2）</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="215"/>
         <source>A file with one rsync exclude pattern per line (--exclude-from). The file is read locally and is also used by the verification pass.</source>
         <translation>每行一个 rsync 排除模式的文件（--exclude-from）。文件在本地读取，校验时也会使用。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="211"/>
+        <location filename="../src/mainwindow.cpp" line="219"/>
         <source>Select a file with rsync exclude patterns</source>
         <translation>选择包含 rsync 排除模式的文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="214"/>
+        <location filename="../src/mainwindow.cpp" line="222"/>
         <source>Exclude file:</source>
         <translation>排除文件：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="219"/>
+        <location filename="../src/mainwindow.cpp" line="227"/>
         <source>e.g. ~/.ssh/id_ed25519</source>
         <translation>例如 ~/.ssh/id_ed25519</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="220"/>
+        <location filename="../src/mainwindow.cpp" line="228"/>
         <source>Private SSH key passed to ssh with -i. It is used for user@host:path and sftp:// destinations.</source>
         <translation>传递给 ssh 的私钥（-i）。用于 user@host:path 和 sftp:// 目标。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="224"/>
-        <location filename="../src/mainwindow.cpp" line="1195"/>
+        <location filename="../src/mainwindow.cpp" line="232"/>
+        <location filename="../src/mainwindow.cpp" line="1249"/>
         <source>Select the SSH private key</source>
         <translation>选择 SSH 私钥</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="227"/>
+        <location filename="../src/mainwindow.cpp" line="235"/>
         <source>SSH key:</source>
         <translation>SSH 密钥：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="324"/>
+        <location filename="../src/mainwindow.cpp" line="332"/>
         <source>Only files tracked by Git</source>
         <translation>只同步 Git 跟踪的文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="325"/>
+        <location filename="../src/mainwindow.cpp" line="333"/>
         <source>Use one local Git repository root as the source and copy only the files listed by git ls-files. Untracked and ignored files are skipped.</source>
         <translation>使用一个本地 Git 仓库根目录作为源，只复制 git ls-files 列出的文件。未跟踪和被忽略的文件会跳过。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="327"/>
+        <location filename="../src/mainwindow.cpp" line="335"/>
         <source>Include the .git repository</source>
         <translation>包含 .git 仓库本身</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="329"/>
+        <location filename="../src/mainwindow.cpp" line="337"/>
         <source>Copy the .git directory too, so the destination remains a Git repository. Turn it off to copy only the working tree.</source>
         <translation>同时复制 .git 目录，使目标仍是一个 Git 仓库。关闭后只复制工作树。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="334"/>
+        <location filename="../src/mainwindow.cpp" line="342"/>
         <source>Git:</source>
         <translation>Git：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="337"/>
+        <location filename="../src/mainwindow.cpp" line="345"/>
         <source>Keep numeric UID/GID (--numeric-ids)</source>
         <translation>保留数字 UID/GID (--numeric-ids)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="338"/>
+        <location filename="../src/mainwindow.cpp" line="346"/>
         <source>Keep the numeric owner and group IDs instead of mapping them to names; needed for exact system restores.</source>
         <translation>保留数字属主和组 ID，不映射为名称；精确恢复系统时需要。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="340"/>
+        <location filename="../src/mainwindow.cpp" line="348"/>
         <source>Stay on the source file system (-x)</source>
         <translation>只同步源所在文件系统 (-x)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="341"/>
+        <location filename="../src/mainwindow.cpp" line="349"/>
         <source>Do not cross file system boundaries, e.g. skip mounted disks below the source.</source>
         <translation>不跨越文件系统边界，例如跳过源目录下挂载的其他磁盘。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="343"/>
+        <location filename="../src/mainwindow.cpp" line="351"/>
         <source>Sparse files (--sparse)</source>
         <translation>稀疏文件 (--sparse)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="344"/>
+        <location filename="../src/mainwindow.cpp" line="352"/>
         <source>Write long runs of zeros as sparse blocks; useful for disk images.</source>
         <translation>将长串零写成稀疏块；适合磁盘镜像。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="348"/>
+        <location filename="../src/mainwindow.cpp" line="356"/>
         <source>Backup:</source>
         <translation>备份：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="353"/>
+        <location filename="../src/mainwindow.cpp" line="361"/>
         <source>e.g. /mnt/data/debian/seed or a previous snapshot</source>
         <translation>例如 /mnt/data/debian/seed 或上一份快照</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="354"/>
+        <location filename="../src/mainwindow.cpp" line="362"/>
         <source>Hard-link unchanged files from this directory instead of transferring them (--link-dest). Use a previous snapshot or sysbackup&apos;s seed directory. For a remote destination, enter the path on the remote host.</source>
         <translation>未变化的文件从该目录硬链接，而不是重新传输（--link-dest）。可填上一份快照或 sysbackup 的种子目录。目标是远程时，请填远端主机上的路径。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="359"/>
-        <location filename="../src/mainwindow.cpp" line="1207"/>
+        <location filename="../src/mainwindow.cpp" line="367"/>
+        <location filename="../src/mainwindow.cpp" line="1261"/>
         <source>Select the hard-link base directory</source>
         <translation>选择硬链接基准目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="362"/>
+        <location filename="../src/mainwindow.cpp" line="370"/>
         <source>Hard-link base (--link-dest):</source>
         <translation>硬链接基准 (--link-dest)：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="400"/>
+        <location filename="../src/mainwindow.cpp" line="408"/>
         <source>Allow undoing the copy (keeps replaced files in the destination)</source>
         <translation>允许复制后撤回（在目标中保存被覆盖的旧文件）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="402"/>
+        <location filename="../src/mainwindow.cpp" line="410"/>
         <source>Runs the copy with --backup: files that it overwrites or deletes in the destination are kept in a hidden directory there, and what is copied is recorded. &quot;Undo copy&quot; afterwards restores the destination to its state before the run - also after a cancelled or failed copy.
 Not possible for remote destinations, dry runs and moves; the kept files need extra space in the destination until the next copy.</source>
         <translation>复制时加 --backup：被覆盖或删除的旧文件保存在目标里的一个隐藏目录中，并记录复制了哪些内容。之后可用&amp;quot;撤回复制&amp;quot;把目标恢复到运行前的状态 - 取消或失败的复制同样可以撤回。
 远程目标、演练和移动不支持；保存的旧文件会占用目标的额外空间，直到下一次复制。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="408"/>
+        <location filename="../src/mainwindow.cpp" line="416"/>
         <source>Undo:</source>
         <translation>撤回：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="411"/>
+        <location filename="../src/mainwindow.cpp" line="419"/>
         <source>e.g. --exclude=&apos;*.tmp&apos; --exclude=.cache --mkpath</source>
         <translation>例如 --exclude=&apos;*.tmp&apos; --exclude=.cache --mkpath</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="412"/>
+        <location filename="../src/mainwindow.cpp" line="420"/>
         <source>Any other rsync options, written like in a shell (quotes are supported). They are also passed to the verification pass (e.g. --exclude).</source>
         <translation>其他 rsync 选项，按 shell 语法书写（支持引号）。它们也会传给校验过程（例如 --exclude）。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="414"/>
+        <location filename="../src/mainwindow.cpp" line="422"/>
         <source>Additional arguments:</source>
         <translation>附加参数：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="417"/>
+        <location filename="../src/mainwindow.cpp" line="425"/>
         <source>Restore defaults</source>
         <translation>恢复默认值</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="418"/>
+        <location filename="../src/mainwindow.cpp" line="426"/>
         <source>Import...</source>
         <translation>导入...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="419"/>
+        <location filename="../src/mainwindow.cpp" line="427"/>
         <source>Load options from a JSON settings file</source>
         <translation>从 JSON 设置文件加载选项</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="420"/>
+        <location filename="../src/mainwindow.cpp" line="428"/>
         <source>Export...</source>
         <translation>导出...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="421"/>
+        <location filename="../src/mainwindow.cpp" line="429"/>
         <source>Save the current options to a JSON settings file</source>
         <translation>将当前选项保存到 JSON 设置文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="434"/>
+        <location filename="../src/mainwindow.cpp" line="442"/>
         <source>Options</source>
         <translation>选项</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="442"/>
+        <location filename="../src/mainwindow.cpp" line="450"/>
         <source>Command:</source>
         <translation>命令：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="452"/>
-        <location filename="../src/mainwindow.cpp" line="1079"/>
+        <location filename="../src/mainwindow.cpp" line="460"/>
+        <location filename="../src/mainwindow.cpp" line="1093"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="455"/>
-        <location filename="../src/mainwindow.cpp" line="1465"/>
-        <location filename="../src/mainwindow.cpp" line="1667"/>
+        <location filename="../src/mainwindow.cpp" line="463"/>
+        <location filename="../src/mainwindow.cpp" line="1519"/>
+        <location filename="../src/mainwindow.cpp" line="1721"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="456"/>
+        <location filename="../src/mainwindow.cpp" line="464"/>
         <source>Undo copy...</source>
         <translation>撤回复制...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="457"/>
+        <location filename="../src/mainwindow.cpp" line="465"/>
         <source>Restores the destination of the last copy to its state before the run: entries that it created are deleted, replaced or deleted files are restored from the kept old versions.
 The sources are not touched.</source>
         <translation>把上次复制的目标恢复到运行前的状态：删除这次新建的条目，被覆盖或删除的文件从保存的旧版本还原。
 源不会被改动。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="460"/>
+        <location filename="../src/mainwindow.cpp" line="468"/>
         <source>Close when finished</source>
         <translation>完成后关闭</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="461"/>
+        <location filename="../src/mainwindow.cpp" line="469"/>
         <source>Quit Rsync GUI after a successful transfer. After errors, verification differences, cancelling or a dry run the window stays open.</source>
         <translation>成功传输后退出 Rsync GUI。出现错误、校验差异、取消或演练后，窗口会保持打开。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="486"/>
+        <location filename="../src/mainwindow.cpp" line="494"/>
         <source>Clear log</source>
         <translation>清空日志</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="489"/>
+        <location filename="../src/mainwindow.cpp" line="497"/>
         <source>Log</source>
         <translation>日志</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="560"/>
+        <location filename="../src/mainwindow.cpp" line="573"/>
         <source>&amp;File</source>
         <translation>文件(&amp;F)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="561"/>
+        <location filename="../src/mainwindow.cpp" line="574"/>
         <source>Load &amp;preset</source>
         <translation>加载预设(&amp;P)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="564"/>
+        <location filename="../src/mainwindow.cpp" line="577"/>
         <source>&amp;Import settings...</source>
         <translation>导入设置(&amp;I)...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="567"/>
+        <location filename="../src/mainwindow.cpp" line="580"/>
         <source>&amp;Export settings...</source>
         <translation>导出设置(&amp;E)...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="570"/>
+        <location filename="../src/mainwindow.cpp" line="583"/>
         <source>&amp;Recent settings</source>
         <translation>最近设置(&amp;R)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="573"/>
+        <location filename="../src/mainwindow.cpp" line="586"/>
         <source>&amp;Quit</source>
         <translation>退出(&amp;Q)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="577"/>
+        <location filename="../src/mainwindow.cpp" line="590"/>
         <source>&amp;Help</source>
         <translation>帮助(&amp;H)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="578"/>
+        <location filename="../src/mainwindow.cpp" line="591"/>
         <source>&amp;About</source>
         <translation>关于(&amp;A)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="587"/>
+        <location filename="../src/mainwindow.cpp" line="600"/>
         <source>No presets found</source>
         <translation>未找到预设</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="599"/>
+        <location filename="../src/mainwindow.cpp" line="612"/>
         <source> + verification pass, then --remove-source-files</source>
         <translation> + 校验过程，然后 --remove-source-files</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="601"/>
+        <location filename="../src/mainwindow.cpp" line="614"/>
         <source> + verification pass</source>
         <translation> + 校验过程</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="602"/>
+        <location filename="../src/mainwindow.cpp" line="615"/>
         <source>%1
 %2</source>
         <translation>%1
 %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="609"/>
+        <location filename="../src/mainwindow.cpp" line="622"/>
         <source>Presets are used for this session only</source>
         <translation>预设仅用于本次会话</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="622"/>
+        <location filename="../src/mainwindow.cpp" line="635"/>
         <source>No recent settings files</source>
         <translation>没有最近的设置文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="632"/>
+        <location filename="../src/mainwindow.cpp" line="645"/>
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="639"/>
+        <location filename="../src/mainwindow.cpp" line="652"/>
         <source>Clear list</source>
         <translation>清空列表</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="681"/>
+        <location filename="../src/mainwindow.cpp" line="694"/>
         <source>The last copy can still be undone: %1</source>
         <translation>上次的复制仍可撤回：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="717"/>
+        <location filename="../src/mainwindow.cpp" line="730"/>
         <source>%1 - %2</source>
         <translation>%1 - %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="886"/>
+        <location filename="../src/mainwindow.cpp" line="899"/>
         <source>Choose the files that were meant</source>
         <translation>选择原本要处理的文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="889"/>
+        <location filename="../src/mainwindow.cpp" line="902"/>
         <source>The file manager passed %1, which does not exist: it replaces bytes that are not valid UTF-8 with %2. Several names here match - choose the ones that were meant.</source>
         <translation>文件管理器传入了 %1，但它不存在：它把非 UTF-8 字节替换成了 %2。此处有多个名称匹配 - 请选择原本要处理的文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="923"/>
+        <location filename="../src/mainwindow.cpp" line="936"/>
         <source>remote (%1 over ssh)</source>
         <translation>远程（%1，通过 ssh）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="923"/>
+        <location filename="../src/mainwindow.cpp" line="936"/>
         <source>%1, port %2</source>
         <translation>%1，端口 %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="928"/>
+        <location filename="../src/mainwindow.cpp" line="941"/>
         <source>symbolic link to %1 (copied as a link in archive mode)</source>
         <translation>指向 %1 的符号链接（归档模式下按链接复制）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="931"/>
+        <location filename="../src/mainwindow.cpp" line="944"/>
         <source>directory</source>
         <translation>目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="934"/>
+        <location filename="../src/mainwindow.cpp" line="947"/>
         <source>file, %1</source>
         <translation>文件，%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="937"/>
+        <location filename="../src/mainwindow.cpp" line="950"/>
         <source>special file</source>
         <translation>特殊文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="940"/>
+        <location filename="../src/mainwindow.cpp" line="953"/>
         <source>does not exist</source>
         <translation>不存在</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="944"/>
+        <location filename="../src/mainwindow.cpp" line="957"/>
         <source>
 The name is not valid UTF-8 - shown with \x escapes, copied with the exact bytes.</source>
         <translation>
 名称不是有效的 UTF-8 - 使用 \x 转义显示，复制时保留原始字节。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="963"/>
+        <location filename="../src/mainwindow.cpp" line="976"/>
         <source>No sources. Add files or directories, paste paths or drop them here.</source>
         <translation>没有源。添加文件或目录、粘贴路径，或将它们拖放到此处。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="967"/>
+        <location filename="../src/mainwindow.cpp" line="980"/>
         <source>Type: %1</source>
         <translation>类型：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="987"/>
+        <location filename="../src/mainwindow.cpp" line="1000"/>
         <source>%1 sources: %2 file(s), %3 director(y/ies)</source>
         <translation>%1 个源：%2 个文件，%3 个目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="989"/>
+        <location filename="../src/mainwindow.cpp" line="1002"/>
         <source>, %1 remote</source>
         <translation>，%1 个远程</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="991"/>
+        <location filename="../src/mainwindow.cpp" line="1004"/>
         <source>, %1 missing (they will be skipped)</source>
         <translation>，%1 个缺失（将被跳过）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1000"/>
+        <location filename="../src/mainwindow.cpp" line="1013"/>
         <source>Choose the directory to copy into.</source>
         <translation>选择要复制到的目录。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1002"/>
+        <location filename="../src/mainwindow.cpp" line="1015"/>
         <source>Remote destination on %1 (over ssh). rsync creates the last directory of the path if it is missing.</source>
         <translation>远程目标位于 %1（通过 ssh）。如果路径的最后一级目录不存在，rsync 会创建它。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1008"/>
+        <location filename="../src/mainwindow.cpp" line="1021"/>
         <source>Existing directory, %1 free.</source>
         <translation>已存在的目录，可用空间 %1。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1009"/>
+        <location filename="../src/mainwindow.cpp" line="1022"/>
         <source>Existing directory.</source>
         <translation>已存在的目录。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1011"/>
+        <location filename="../src/mainwindow.cpp" line="1024"/>
         <source> FAT file system: file times are compared with a tolerance of 1 s (--modify-window=1).</source>
         <translation> FAT 文件系统：文件时间比较容差为 1 秒（--modify-window=1）。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1013"/>
+        <location filename="../src/mainwindow.cpp" line="1026"/>
         <source>&lt;b&gt;Not a directory:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;不是目录：&lt;/b&gt; %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1015"/>
+        <location filename="../src/mainwindow.cpp" line="1028"/>
         <source>The directory %1 does not exist - it will be created.</source>
         <translation>目录 %1 不存在 - 将创建它。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1018"/>
+        <location filename="../src/mainwindow.cpp" line="1031"/>
         <source> (%1)</source>
         <translation> (%1)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1033"/>
+        <location filename="../src/mainwindow.cpp" line="1046"/>
         <source> &lt;sources&gt; </source>
         <translation> &lt;源&gt; </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1034"/>
-        <location filename="../src/mainwindow.cpp" line="1039"/>
+        <location filename="../src/mainwindow.cpp" line="1047"/>
+        <location filename="../src/mainwindow.cpp" line="1052"/>
         <source>&lt;destination&gt;/</source>
         <translation>&lt;目标&gt;/</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1041"/>
+        <location filename="../src/mainwindow.cpp" line="1054"/>
         <source>   (+ %1 more rsync run(s) for other hosts)</source>
         <translation>   （另有 %1 次 rsync 运行，用于其他主机）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1044"/>
+        <location filename="../src/mainwindow.cpp" line="1057"/>
         <source>   (+ verification pass, then the sources are removed)</source>
         <translation>   （+ 校验过程，然后删除源文件）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1046"/>
+        <location filename="../src/mainwindow.cpp" line="1059"/>
         <source>   (+ verification pass)</source>
         <translation>   （+ 校验过程）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1049"/>
+        <location filename="../src/mainwindow.cpp" line="1062"/>
         <source>   (only Git-tracked files, including .git)</source>
         <translation>   （仅 Git 跟踪的文件，包含 .git）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1050"/>
+        <location filename="../src/mainwindow.cpp" line="1063"/>
         <source>   (only Git-tracked files)</source>
         <translation>   （仅 Git 跟踪的文件）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1078"/>
-        <location filename="../src/mainwindow.cpp" line="1534"/>
+        <location filename="../src/mainwindow.cpp" line="1092"/>
+        <location filename="../src/mainwindow.cpp" line="1588"/>
         <source>Dry run</source>
         <translation>演练</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1079"/>
-        <location filename="../src/mainwindow.cpp" line="1463"/>
+        <location filename="../src/mainwindow.cpp" line="1093"/>
+        <location filename="../src/mainwindow.cpp" line="1517"/>
         <source>Move</source>
         <translation>移动</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1086"/>
+        <location filename="../src/mainwindow.cpp" line="1100"/>
         <source>Verification is not done for a dry run.</source>
         <translation>演练模式不进行校验。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1091"/>
-        <location filename="../src/mainwindow.cpp" line="1332"/>
+        <location filename="../src/mainwindow.cpp" line="1105"/>
+        <location filename="../src/mainwindow.cpp" line="1386"/>
         <source>Git-tracked mode needs exactly one local repository root.</source>
         <translation>Git 模式需要恰好一个本地 Git 仓库根目录。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1137"/>
+        <location filename="../src/mainwindow.cpp" line="1166"/>
+        <location filename="../src/mainwindow.cpp" line="1171"/>
+        <location filename="../src/mainwindow.cpp" line="1176"/>
+        <source>Edit source</source>
+        <translation>编辑源</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="1166"/>
+        <source>Source path:</source>
+        <translation>源路径：</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="1171"/>
+        <source>The path is empty.</source>
+        <translation>路径为空。</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="1176"/>
+        <source>%1 is not a valid source path.</source>
+        <translation>%1 不是有效的源路径。</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="1191"/>
         <source>Select files to copy</source>
         <translation>选择要复制的文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1145"/>
+        <location filename="../src/mainwindow.cpp" line="1199"/>
         <source>Select a directory to copy</source>
         <translation>选择要复制的目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1174"/>
+        <location filename="../src/mainwindow.cpp" line="1228"/>
         <source>Select the destination directory</source>
         <translation>选择目标目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1183"/>
+        <location filename="../src/mainwindow.cpp" line="1237"/>
         <source>Select the rsync program</source>
         <translation>选择 rsync 程序</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1219"/>
+        <location filename="../src/mainwindow.cpp" line="1273"/>
         <source>Select the exclude list</source>
         <translation>选择排除列表</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1244"/>
+        <location filename="../src/mainwindow.cpp" line="1298"/>
         <source>Import failed</source>
         <translation>导入失败</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1256"/>
+        <location filename="../src/mainwindow.cpp" line="1310"/>
         <source>Imported settings from %1</source>
         <translation>已从 %1 导入设置</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1260"/>
+        <location filename="../src/mainwindow.cpp" line="1314"/>
         <source>%1 - session only, not remembered</source>
         <translation>%1 - 仅本次会话，不会记住</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1261"/>
+        <location filename="../src/mainwindow.cpp" line="1315"/>
         <source>Loaded &quot;%1&quot; from %2 (session only)</source>
         <translation>已从 %2 加载 &quot;%1&quot;（仅本次会话）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1265"/>
+        <location filename="../src/mainwindow.cpp" line="1319"/>
         <source>Loaded settings &quot;%1&quot;</source>
         <translation>已加载设置 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1273"/>
+        <location filename="../src/mainwindow.cpp" line="1327"/>
         <source>Preset not found</source>
         <translation>未找到预设</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1274"/>
+        <location filename="../src/mainwindow.cpp" line="1328"/>
         <source>Preset &quot;%1&quot; was not found. Searched in:
 %2</source>
         <translation>未找到预设 &quot;%1&quot;。已搜索：
 %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1285"/>
+        <location filename="../src/mainwindow.cpp" line="1339"/>
         <source>Import settings</source>
         <translation>导入设置</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1296"/>
+        <location filename="../src/mainwindow.cpp" line="1350"/>
         <source>Export settings</source>
         <translation>导出设置</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1305"/>
+        <location filename="../src/mainwindow.cpp" line="1359"/>
         <source>Export failed</source>
         <translation>导出失败</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1309"/>
-        <location filename="../src/mainwindow.cpp" line="1310"/>
+        <location filename="../src/mainwindow.cpp" line="1363"/>
+        <location filename="../src/mainwindow.cpp" line="1364"/>
         <source>Exported settings to %1</source>
         <translation>已将设置导出到 %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1315"/>
+        <location filename="../src/mainwindow.cpp" line="1369"/>
         <source>About Rsync GUI</source>
         <translation>关于 Rsync GUI</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1316"/>
+        <location filename="../src/mainwindow.cpp" line="1370"/>
         <source>&lt;b&gt;Rsync GUI&lt;/b&gt; %1&lt;br&gt;&lt;br&gt;A graphical front-end for copying files with &lt;code&gt;rsync&lt;/code&gt;.&lt;br&gt;&lt;br&gt;&lt;b&gt;Created with AI:&lt;/b&gt; the code, tests and documentation were written by Claude (Anthropic) in Claude Code, following the author&apos;s requirements, and checked with automated tests and by hand. Review the code before relying on it, especially for moving files.&lt;br&gt;&lt;br&gt;Licensed under the MIT License.</source>
         <translation>&lt;b&gt;Rsync GUI&lt;/b&gt; %1&lt;br&gt;&lt;br&gt;一个使用 &lt;code&gt;rsync&lt;/code&gt; 复制文件的图形前端。&lt;br&gt;&lt;br&gt;&lt;b&gt;由 AI 创建：&lt;/b&gt;代码、测试和文档由 Claude（Anthropic）在 Claude Code 中根据作者要求编写，并通过自动测试和人工检查。依赖它之前请先审查代码，尤其是移动文件功能。&lt;br&gt;&lt;br&gt;MIT 许可证。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1342"/>
+        <location filename="../src/mainwindow.cpp" line="1396"/>
         <source>Cannot create the temporary Git file list: %1</source>
         <translation>无法创建临时 Git 文件列表：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1361"/>
+        <location filename="../src/mainwindow.cpp" line="1415"/>
         <source>Invalid options</source>
         <translation>选项无效</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1367"/>
+        <location filename="../src/mainwindow.cpp" line="1421"/>
         <source>No destination</source>
         <translation>未选择目标</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1367"/>
+        <location filename="../src/mainwindow.cpp" line="1421"/>
         <source>Choose the destination directory first.</source>
         <translation>请先选择目标目录。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1372"/>
+        <location filename="../src/mainwindow.cpp" line="1426"/>
         <source>Invalid destination</source>
         <translation>目标无效</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1372"/>
+        <location filename="../src/mainwindow.cpp" line="1426"/>
         <source>%1 is not a directory.</source>
         <translation>%1 不是目录。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1380"/>
-        <location filename="../src/mainwindow.cpp" line="1388"/>
+        <location filename="../src/mainwindow.cpp" line="1434"/>
+        <location filename="../src/mainwindow.cpp" line="1442"/>
         <source>Cannot continue</source>
         <translation>无法继续</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1393"/>
+        <location filename="../src/mainwindow.cpp" line="1447"/>
         <source>Some sources do not exist</source>
         <translation>部分源不存在</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1394"/>
+        <location filename="../src/mainwindow.cpp" line="1448"/>
         <source>These sources do not exist:
 %1
 
@@ -1268,212 +1301,212 @@ Continue without them?</source>
 是否继续（跳过它们）？</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1401"/>
-        <location filename="../src/mainwindow.cpp" line="1406"/>
+        <location filename="../src/mainwindow.cpp" line="1455"/>
+        <location filename="../src/mainwindow.cpp" line="1460"/>
         <source>Create destination</source>
         <translation>创建目标目录</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1402"/>
+        <location filename="../src/mainwindow.cpp" line="1456"/>
         <source>The directory %1 does not exist. Create it?</source>
         <translation>目录 %1 不存在。是否创建？</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1406"/>
+        <location filename="../src/mainwindow.cpp" line="1460"/>
         <source>Cannot create the directory %1.</source>
         <translation>无法创建目录 %1。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1424"/>
+        <location filename="../src/mainwindow.cpp" line="1478"/>
         <source>Undo is not possible: files that the run replaces cannot be kept on a remote destination.</source>
         <translation>无法撤回：远程目标上无法保存被覆盖的旧文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1427"/>
+        <location filename="../src/mainwindow.cpp" line="1481"/>
         <source>Undo is not possible: the additional arguments change what rsync reports or keeps (--backup, -i/--itemize-changes, --out-format).</source>
         <translation>无法撤回：附加参数改变了 rsync 的输出或备份行为（--backup、-i/--itemize-changes、--out-format）。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1449"/>
+        <location filename="../src/mainwindow.cpp" line="1503"/>
         <source>&lt;b&gt;--delete&lt;/b&gt;: files in the destination that do not exist in the source will be &lt;b&gt;deleted&lt;/b&gt;.&lt;br&gt;</source>
         <translation>&lt;b&gt;--delete&lt;/b&gt;：目标中源里不存在的文件将被&lt;b&gt;删除&lt;/b&gt;。&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1452"/>
+        <location filename="../src/mainwindow.cpp" line="1506"/>
         <source>&lt;b&gt;--remove-source-files&lt;/b&gt;: the copied files will be &lt;b&gt;removed from the source&lt;/b&gt; (move) - only after the verification has found no differences.&lt;br&gt;</source>
         <translation>&lt;b&gt;--remove-source-files&lt;/b&gt;：复制后的文件将从源中&lt;b&gt;删除&lt;/b&gt;（移动）- 只有在校验未发现差异后才会执行。&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1455"/>
+        <location filename="../src/mainwindow.cpp" line="1509"/>
         <source>&lt;b&gt;--remove-source-files&lt;/b&gt;: the copied files will be &lt;b&gt;removed from the source&lt;/b&gt; (move).&lt;br&gt;</source>
         <translation>&lt;b&gt;--remove-source-files&lt;/b&gt;：复制后的文件将从源中&lt;b&gt;删除&lt;/b&gt;（移动）。&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1458"/>
+        <location filename="../src/mainwindow.cpp" line="1512"/>
         <source>Source directories left empty will be removed too.&lt;br&gt;</source>
         <translation>变空的源目录也会被删除。&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1459"/>
+        <location filename="../src/mainwindow.cpp" line="1513"/>
         <source>&lt;br&gt;Command:&lt;br&gt;&lt;code&gt;%1&lt;/code&gt;&lt;br&gt;&lt;br&gt;Consider a dry run (-n) first.</source>
         <translation>&lt;br&gt;命令：&lt;br&gt;&lt;code&gt;%1&lt;/code&gt;&lt;br&gt;&lt;br&gt;建议先进行演练 (-n)。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1461"/>
+        <location filename="../src/mainwindow.cpp" line="1515"/>
         <source>Confirm</source>
         <translation>确认</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1463"/>
+        <location filename="../src/mainwindow.cpp" line="1517"/>
         <source>Copy and delete</source>
         <translation>复制并删除</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1504"/>
+        <location filename="../src/mainwindow.cpp" line="1558"/>
         <source>Skipped missing source: %1</source>
         <translation>跳过缺失的源：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1506"/>
+        <location filename="../src/mainwindow.cpp" line="1560"/>
         <source>=== Start: %1 source(s) to %2 ===</source>
         <translation>=== 开始：%1 个源 -&gt; %2 ===</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1510"/>
+        <location filename="../src/mainwindow.cpp" line="1564"/>
         <source>The destination keeps file times only to 2 seconds (FAT) - added --modify-window=%1, so that unchanged files are not copied again.</source>
         <translation>目标文件系统只保留 2 秒精度的文件时间（FAT）- 已添加 --modify-window=%1，避免重复复制未变化的文件。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1530"/>
+        <location filename="../src/mainwindow.cpp" line="1584"/>
         <source>%1 (+%2 more)</source>
         <translation>%1（另有 %2 个）</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1534"/>
+        <location filename="../src/mainwindow.cpp" line="1588"/>
         <source>Moving</source>
         <translation>正在移动</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1534"/>
+        <location filename="../src/mainwindow.cpp" line="1588"/>
         <source>Copying</source>
         <translation>正在复制</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1606"/>
+        <location filename="../src/mainwindow.cpp" line="1660"/>
         <source>This copy can be undone: %1 created entr(y/ies) would be deleted, %2 replaced or deleted entr(y/ies) would be restored (kept in %3).</source>
         <translation>这次复制可以撤回：将删除新建的 %1 个条目，还原被覆盖或删除的 %2 个条目（保存在 %3）。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1631"/>
+        <location filename="../src/mainwindow.cpp" line="1685"/>
         <source>The undo data of the previous run could not be removed completely: %1</source>
         <translation>上次运行的撤回数据未能完全删除：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1644"/>
-        <location filename="../src/mainwindow.cpp" line="1655"/>
-        <location filename="../src/mainwindow.cpp" line="1666"/>
+        <location filename="../src/mainwindow.cpp" line="1698"/>
+        <location filename="../src/mainwindow.cpp" line="1709"/>
+        <location filename="../src/mainwindow.cpp" line="1720"/>
         <source>Undo copy</source>
         <translation>撤回复制</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1645"/>
+        <location filename="../src/mainwindow.cpp" line="1699"/>
         <source>There is nothing to undo any more: the undo data in %1 is gone.</source>
         <translation>已没有可撤回的内容：%1 中的撤回数据已不存在。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1656"/>
+        <location filename="../src/mainwindow.cpp" line="1710"/>
         <source>&lt;b&gt;Restore %1 to its state before the copy?&lt;/b&gt;&lt;br&gt;Entries that the run created are deleted: %2&lt;br&gt;Old versions that the run replaced or removed are restored: %3&lt;br&gt;&lt;br&gt;The sources are not touched. This cannot be redone; consider a dry run (-n) for checking first.</source>
         <translation>&lt;b&gt;把 %1 恢复到复制前的状态？&lt;/b&gt;&lt;br&gt;删除这次新建的条目：%2 个&lt;br&gt;还原被覆盖或删除的旧文件：%3 个&lt;br&gt;&lt;br&gt;源不会被改动。此操作无法重做；不确定时可先用演练 (-n) 检查。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1674"/>
+        <location filename="../src/mainwindow.cpp" line="1728"/>
         <source>=== Undo: restore %1 ===</source>
         <translation>=== 撤回：恢复 %1 ===</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1680"/>
+        <location filename="../src/mainwindow.cpp" line="1734"/>
         <source>Undoing...</source>
         <translation>正在撤回...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1712"/>
+        <location filename="../src/mainwindow.cpp" line="1766"/>
         <source>Undo cancelled. The destination is between the two states now; &quot;Undo copy&quot; continues from here.</source>
         <translation>撤回已取消。目标目前处于两种状态之间；再次&amp;quot;撤回复制&amp;quot;会从这里继续。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1714"/>
+        <location filename="../src/mainwindow.cpp" line="1768"/>
         <source>Undone: %1 entr(y/ies) deleted, %2 restored.</source>
         <translation>已撤回：删除 %1 个条目，还原 %2 个。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1718"/>
+        <location filename="../src/mainwindow.cpp" line="1772"/>
         <source> %1 could not be undone.</source>
         <translation> %1 个条目未能撤回。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1722"/>
+        <location filename="../src/mainwindow.cpp" line="1776"/>
         <source>Old versions that could not be restored are still in %1.</source>
         <translation>无法还原的旧版本仍保存在 %1。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1786"/>
+        <location filename="../src/mainwindow.cpp" line="1840"/>
         <source>Verification found %1 difference(s).</source>
         <translation>校验发现 %1 处差异。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1788"/>
-        <location filename="../src/mainwindow.cpp" line="1823"/>
+        <location filename="../src/mainwindow.cpp" line="1842"/>
+        <location filename="../src/mainwindow.cpp" line="1877"/>
         <source>Finished with errors.</source>
         <translation>完成但有错误。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1803"/>
+        <location filename="../src/mainwindow.cpp" line="1857"/>
         <source>Finished successfully. Closing...</source>
         <translation>成功完成，正在关闭...</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1809"/>
-        <location filename="../src/mainwindow.cpp" line="1810"/>
+        <location filename="../src/mainwindow.cpp" line="1863"/>
+        <location filename="../src/mainwindow.cpp" line="1864"/>
         <source>Finished successfully.</source>
         <translation>成功完成。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1812"/>
+        <location filename="../src/mainwindow.cpp" line="1866"/>
         <source>Cancelled.</source>
         <translation>已取消。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1814"/>
+        <location filename="../src/mainwindow.cpp" line="1868"/>
         <source>Verification found differences.</source>
         <translation>校验发现差异。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1815"/>
+        <location filename="../src/mainwindow.cpp" line="1869"/>
         <source>Verification failed</source>
         <translation>校验失败</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1816"/>
+        <location filename="../src/mainwindow.cpp" line="1870"/>
         <source>%1 entr(y/ies) in the destination differ from the source or are missing. See the log for details.</source>
         <translation>目标中有 %1 个条目与源不同或缺失。详情见日志。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1824"/>
+        <location filename="../src/mainwindow.cpp" line="1878"/>
         <source>Finished with errors</source>
         <translation>完成但有错误</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1825"/>
+        <location filename="../src/mainwindow.cpp" line="1879"/>
         <source>Not everything could be copied. See the log for details.</source>
         <translation>并非所有内容都能复制。详情见日志。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1834"/>
+        <location filename="../src/mainwindow.cpp" line="1888"/>
         <source>Copying in progress</source>
         <translation>正在复制</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1835"/>
+        <location filename="../src/mainwindow.cpp" line="1889"/>
         <source>A transfer is in progress. Cancel it and quit?
 The file being copied may be incomplete in the destination.</source>
         <translation>正在传输。是否取消并退出？
@@ -1686,12 +1719,12 @@ The file being copied may be incomplete in the destination.</source>
     </message>
     <message>
         <location filename="../src/copyundo.cpp" line="328"/>
-        <location filename="../src/copyundo.cpp" line="345"/>
+        <location filename="../src/copyundo.cpp" line="354"/>
         <source>Restoring %1</source>
         <translation>正在还原 %1</translation>
     </message>
     <message>
-        <location filename="../src/copyundo.cpp" line="338"/>
+        <location filename="../src/copyundo.cpp" line="347"/>
         <source>Cannot restore %1: %2</source>
         <translation>无法还原 %1：%2</translation>
     </message>

@@ -18,6 +18,7 @@
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QFutureWatcher>
+#include <QInputDialog>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -106,9 +107,13 @@ void MainWindow::buildUi()
     auto *pasteAction = new QAction(QIcon::fromTheme(QStringLiteral("edit-paste")), tr("Paste paths"), m_sourceList);
     pasteAction->setShortcut(QKeySequence::Paste);
     pasteAction->setShortcutContext(Qt::WidgetShortcut);
+    auto *editAction = new QAction(QIcon::fromTheme(QStringLiteral("document-edit")), tr("Edit..."), m_sourceList);
+    editAction->setShortcut(QKeySequence(Qt::Key_F2));
+    editAction->setShortcutContext(Qt::WidgetShortcut);
     auto *removeAction = new QAction(QIcon::fromTheme(QStringLiteral("list-remove")), tr("Remove from list"), m_sourceList);
     removeAction->setShortcut(QKeySequence::Delete);
     removeAction->setShortcutContext(Qt::WidgetShortcut);
+    m_sourceList->addAction(editAction);
     m_sourceList->addAction(pasteAction);
     m_sourceList->addAction(removeAction);
 
@@ -128,6 +133,8 @@ void MainWindow::buildUi()
     auto *pasteButton = new QPushButton(QIcon::fromTheme(QStringLiteral("edit-paste")), tr("Paste"), m_sourceBox);
     pasteButton->setToolTip(tr("Add paths from the clipboard (one per line, or files copied in a file manager)"));
     m_removeSourcesButton = new QPushButton(QIcon::fromTheme(QStringLiteral("list-remove")), tr("Remove"), m_sourceBox);
+    m_editSourcesButton = new QPushButton(QIcon::fromTheme(QStringLiteral("document-edit")), tr("Edit..."), m_sourceBox);
+    m_editSourcesButton->setToolTip(tr("Edit the path of the selected source (also with a double-click or F2)"));
     m_clearSourcesButton = new QPushButton(QIcon::fromTheme(QStringLiteral("edit-clear-list")), tr("Clear"), m_sourceBox);
     // The built-in file dialog, for names that are not valid UTF-8 (the system dialog cannot choose them).
     auto *fileDialogButton = new QToolButton(m_sourceBox);
@@ -153,6 +160,7 @@ void MainWindow::buildUi()
     sourceButtons->addWidget(fileDialogButton);
     sourceButtons->addWidget(pasteButton);
     sourceButtons->addStretch(1);
+    sourceButtons->addWidget(m_editSourcesButton);
     sourceButtons->addWidget(m_removeSourcesButton);
     sourceButtons->addWidget(m_clearSourcesButton);
     sourceLayout->addLayout(sourceButtons);
@@ -499,6 +507,11 @@ void MainWindow::buildUi()
     connect(pasteAction, &QAction::triggered, this, &MainWindow::pasteSources);
     connect(m_removeSourcesButton, &QPushButton::clicked, this, &MainWindow::removeSelectedSources);
     connect(removeAction, &QAction::triggered, this, &MainWindow::removeSelectedSources);
+    connect(m_editSourcesButton, &QPushButton::clicked, this, [this] { editSelectedSource(); });
+    connect(editAction, &QAction::triggered, this, [this] { editSelectedSource(); });
+    connect(m_sourceList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
+        editSelectedSource(item);
+    });
     connect(m_clearSourcesButton, &QPushButton::clicked, this, [this] {
         m_sourceList->clear();
         updateSourceInfo();
@@ -1073,6 +1086,7 @@ void MainWindow::updateControls()
     m_removeSourceDirsCheck->setEnabled(m_removeSourceCheck->isChecked());
     m_gitIncludeRepoCheck->setEnabled(m_gitTrackedCheck->isChecked());
     m_removeSourcesButton->setEnabled(!m_sourceList->selectedItems().isEmpty());
+    m_editSourcesButton->setEnabled(!m_sourceList->selectedItems().isEmpty());
     m_clearSourcesButton->setEnabled(m_sourceList->count() > 0);
     m_startButton->setEnabled(!running && m_sourceList->count() > 0 && destination().isValid());
     m_startButton->setText(m_dryRunCheck->isChecked() ? tr("Dry run")
@@ -1130,6 +1144,46 @@ void MainWindow::removeSelectedSources()
     updateSourceInfo();
     updatePreview();
     updateControls();
+}
+
+void MainWindow::editSelectedSource(QListWidgetItem *item)
+{
+    if (!item) {
+        const QList<QListWidgetItem *> selected = m_sourceList->selectedItems();
+        if (selected.isEmpty())
+            return;
+        item = selected.first();
+    }
+    m_sourceList->setCurrentItem(item); // the edited entry stays selected afterwards
+    m_sourceList->scrollToItem(item);
+
+    // The stored value is the exact string (LocalPath keeps bytes that are not valid
+    // UTF-8 as characters); the line edit shows them as they are, without losing any.
+    const QString current = item->data(kLocationRole).toString();
+    QString text = current;
+    for (;;) {
+        bool ok = false;
+        text = QInputDialog::getText(this, tr("Edit source"), tr("Source path:"), QLineEdit::Normal, text, &ok);
+        if (!ok)
+            return;
+        text = text.trimmed();
+        if (text.isEmpty()) {
+            QMessageBox::warning(this, tr("Edit source"), tr("The path is empty."));
+            continue;
+        }
+        const Location loc = Location::parse(text);
+        if (!loc.isValid()) {
+            QMessageBox::warning(this, tr("Edit source"), tr("%1 is not a valid source path.").arg(LocalPath::display(text)));
+            continue;
+        }
+        item->setData(kLocationRole, loc.toString());
+        item->setText(LocalPath::display(loc.toString()));
+        refreshSourceItem(item);
+        updateSourceInfo();
+        updatePreview();
+        updateControls();
+        return;
+    }
 }
 
 void MainWindow::browseFiles(bool builtIn)
