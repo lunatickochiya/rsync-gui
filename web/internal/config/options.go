@@ -52,6 +52,7 @@ type Options struct {
 	RemoveSourceDirs  bool `json:"removeSourceDirs"`
 	DryRun            bool `json:"dryRun"`
 	VerifyAfter       bool `json:"verifyAfter"`
+	AllowUndo         bool `json:"allowUndo"`
 
 	UseBwLimit     bool   `json:"useBwLimit"`
 	BwLimit        string `json:"bwLimit"`
@@ -68,6 +69,10 @@ type Options struct {
 	FilesFrom     string `json:"-"`
 	FilesFromZero bool   `json:"-"`
 	ModifyWindow  int    `json:"-"`
+	// UndoDirName is set for one run when its copy pass records undo data: a hidden
+	// directory with this name inside the destination keeps the files that the run
+	// overwrites or deletes (see internal/rsync/undo.go).
+	UndoDirName string `json:"-"`
 }
 
 const SettingsFormat = "rsync-gui-settings"
@@ -92,6 +97,7 @@ func DefaultOptions() Options {
 		GitIncludeRepo:   true,
 		Existing:         "replace",
 		AutoModifyWindow: true,
+		AllowUndo:        true,
 	}
 }
 
@@ -106,6 +112,33 @@ func (o Options) VerifiedMove() bool { return o.RemoveSourceFiles && o.CanVerify
 // RemovesSourceDirs reports whether emptied source directories are cleaned up.
 func (o Options) RemovesSourceDirs() bool {
 	return o.RemoveSourceFiles && o.RemoveSourceDirs && !o.DryRun
+}
+
+// UndoUsable reports whether a copy with these options could record undo data: the
+// additional arguments must not take over what undo relies on (the itemized output
+// and rsync's own --backup mechanism).
+func (o Options) UndoUsable() bool {
+	extra, err := SplitArgs(o.ExtraArguments)
+	if err != nil {
+		return false
+	}
+	for _, arg := range extra {
+		if arg == "-b" || arg == "--backup" || strings.HasPrefix(arg, "--backup-dir") {
+			return false
+		}
+		if arg == "-i" || strings.HasPrefix(arg, "--itemize") {
+			return false
+		}
+		if strings.HasPrefix(arg, "--out-format") {
+			return false
+		}
+		if len(arg) > 1 && strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--") {
+			if strings.Contains(arg, "b") || strings.Contains(arg, "i") {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // CopyArgs returns the arguments of the copy pass.
@@ -257,6 +290,20 @@ func (o Options) buildArgs(port int, removeSources bool) []string {
 	args = append(args, long...)
 	args = append(args, o.remoteShellArgs(port)...)
 	args = append(args, extra...)
+
+	// Undo data of the copy pass (see UndoDirName, set for one run): rsync keeps the
+	// files that it overwrites or deletes in the backup dir (the relative path is
+	// kept, so undo can move them back) and prints an itemized line for every entry
+	// that it changes. The protect rule keeps later runs with --delete from removing
+	// the backup dir. The flags come after the additional arguments on purpose (a run
+	// whose own arguments set --backup/-i/--out-format does not record undo data).
+	if !removeSources && o.UndoDirName != "" && !o.DryRun && !o.RemoveSourceFiles {
+		args = append(args,
+			"--itemize-changes",
+			"--backup",
+			"--backup-dir="+o.UndoDirName,
+			"--filter=P /"+o.UndoDirName)
+	}
 	return args
 }
 

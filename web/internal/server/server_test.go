@@ -251,6 +251,118 @@ func TestStartCopiesFiles(t *testing.T) {
 	}
 }
 
+func TestUndoRestoresDestination(t *testing.T) {
+	root := t.TempDir()
+	src := filepath.Join(root, "src")
+	dst := filepath.Join(root, "dst")
+	if err := os.MkdirAll(filepath.Join(dst, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(path, data string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A file that the run replaces, an extraneous file that --delete removes.
+	write(filepath.Join(dst, "src", "old.txt"), "old")
+	write(filepath.Join(dst, "src", "extra.txt"), "extraneous")
+	write(filepath.Join(src, "old.txt"), "completely new and longer content")
+	write(filepath.Join(src, "fresh.txt"), "fresh")
+
+	opts := config.DefaultOptions()
+	opts.Progress = "none"
+	opts.DeleteExtraneous = true
+	body := map[string]any{
+		"options":     opts,
+		"sources":     []string{src},
+		"destination": dst,
+		"confirm":     true,
+	}
+	_, ts := newTestServer(t, "")
+	client := ts.Client()
+	resp := postJSON(t, client, ts.URL+"/api/start", body)
+	if resp.StatusCode != http.StatusAccepted {
+		data, _ := io.ReadAll(resp.Body)
+		t.Fatalf("start status = %d: %s", resp.StatusCode, data)
+	}
+
+	// The run finished and can be undone.
+	deadline := time.Now().Add(10 * time.Second)
+	var job jobSnapshot
+	for {
+		resp = get(t, client, ts.URL+"/api/bootstrap", nil)
+		boot := decode[bootstrapResponse](t, resp)
+		job = boot.Job
+		if job.Done && job.Undo != nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("job did not finish: %+v", job.Summary)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	// fresh.txt is new; old.txt and extra.txt are kept in the backup dir, and so
+	// is the "src" directory that mirrors their path below the destination.
+	if job.Undo.Deletions != 1 || job.Undo.Restorations != 3 {
+		t.Fatalf("undo info = %+v", job.Undo)
+	}
+	if data, _ := os.ReadFile(filepath.Join(dst, "src", "old.txt")); string(data) != "completely new and longer content" {
+		t.Fatalf("old.txt after copy = %q", data)
+	}
+
+	// Without confirmation the endpoint refuses.
+	resp = postJSON(t, client, ts.URL+"/api/undo", map[string]any{"confirm": false})
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("undo without confirm status = %d", resp.StatusCode)
+	}
+
+	// Undo restores the destination to its state before the run.
+	resp = postJSON(t, client, ts.URL+"/api/undo", map[string]any{"confirm": true})
+	if resp.StatusCode != http.StatusAccepted {
+		data, _ := io.ReadAll(resp.Body)
+		t.Fatalf("undo status = %d: %s", resp.StatusCode, data)
+	}
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		resp = get(t, client, ts.URL+"/api/bootstrap", nil)
+		boot := decode[bootstrapResponse](t, resp)
+		job = boot.Job
+		if job.Done && job.Undo != nil && job.Undo.Result != nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("undo did not finish")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	result := job.Undo.Result
+	if result.Failed != 0 || result.Deleted != 1 || result.Restored != 3 {
+		t.Fatalf("undo result = %+v", result)
+	}
+	if data, _ := os.ReadFile(filepath.Join(dst, "src", "old.txt")); string(data) != "old" {
+		t.Fatalf("old.txt after undo = %q", data)
+	}
+	if data, _ := os.ReadFile(filepath.Join(dst, "src", "extra.txt")); string(data) != "extraneous" {
+		t.Fatalf("extra.txt after undo = %q", data)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "src", "fresh.txt")); !os.IsNotExist(err) {
+		t.Fatal("fresh.txt still exists after undo")
+	}
+	entries, err := os.ReadDir(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".rsync-gui-undo-") {
+			t.Fatalf("backup dir left behind: %s", entry.Name())
+		}
+	}
+}
+
 func TestSettingsRoundTrip(t *testing.T) {
 	_, ts := newTestServer(t, "")
 	opts := config.DefaultOptions()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -100,6 +101,7 @@ const (
 	EventState EventKind = iota
 	EventLog
 	EventDone
+	EventUndoAvailable
 )
 
 // Event is sent to the UI while a run progresses.
@@ -108,6 +110,9 @@ type Event struct {
 	State   State
 	Log     LogLine
 	Summary *Summary
+	// UndoRecord is set for EventUndoAvailable: the run changed the destination
+	// and can be undone (see undo.go).
+	UndoRecord *UndoRecord
 }
 
 // Start runs a plan in the background and streams events. The channel is
@@ -126,6 +131,12 @@ type runner struct {
 	sum    Summary
 	start  time.Time
 	state  State
+	// Undo data of the copy passes (see Options.UndoDirName): the entries that
+	// the run created, relative to the destination.
+	undoActive bool
+	undoLogged bool
+	undoDest   string
+	undoNew    []string
 }
 
 func run(ctx context.Context, plan *Plan, events chan<- Event) {
@@ -136,6 +147,16 @@ func run(ctx context.Context, plan *Plan, events chan<- Event) {
 	r.state.TransferCount = len(plan.Transfers)
 	r.emitState()
 
+	// Undo is off: say why (a dry run changes nothing, and the sources of a move
+	// are removed - undoing only the destination would destroy the only copy).
+	if r.opts.AllowUndo && r.opts.UndoDirName == "" && !r.opts.DryRun && !r.opts.RemoveSourceFiles {
+		if r.plan.DestinationRemote {
+			r.log(LevelWarning, "无法撤回：远程目标上无法保存被覆盖的旧文件。")
+		} else if !r.opts.UndoUsable() {
+			r.log(LevelWarning, "无法撤回：附加参数改变了 rsync 的输出或备份行为（--backup、-i/--itemize-changes、--out-format）。")
+		}
+	}
+
 	transfers := plan.Transfers
 	for i := range transfers {
 		if ctx.Err() != nil {
@@ -145,6 +166,30 @@ func run(ctx context.Context, plan *Plan, events chan<- Event) {
 		r.state.TransferIndex = i + 1
 		if !r.runTransfer(transfers[i]) {
 			break
+		}
+	}
+	// Undo data of the run (see Options.UndoDirName): offered when the run changed
+	// something, and cleaned up when it did not. The record is stored inside the
+	// destination, so a later session can still undo the run.
+	if r.opts.UndoDirName != "" && r.undoDest != "" {
+		rec := UndoRecord{
+			Destination: r.undoDest,
+			UndoDirName: r.opts.UndoDirName,
+			NewEntries:  uniqueNames(r.undoNew),
+			FinishedAt:  time.Now().Format(time.RFC3339),
+		}
+		deletions, restorations, _ := UndoCounts(rec)
+		if deletions+restorations > 0 {
+			if err := UndoSave(rec); err != nil {
+				r.log(LevelWarning, "保存撤回数据失败："+err.Error())
+			}
+			r.emit(Event{Kind: EventUndoAvailable, UndoRecord: &rec})
+		} else {
+			if problems, ok := UndoDiscard(rec); !ok {
+				for _, problem := range problems {
+					r.log(LevelWarning, problem)
+				}
+			}
 		}
 	}
 	r.sum.Duration = time.Since(r.start)
@@ -256,6 +301,24 @@ func (r *runner) runPhase(t Transfer, phase Phase, step, steps int) bool {
 	cmdArgs := r.plan.CommandFor(t, phase)
 	if len(cmdArgs) == 0 {
 		return false
+	}
+	// The copy pass records undo data when the run has a backup directory
+	// (a local destination - the plan sets UndoDirName only when the whole run
+	// can be undone).
+	r.undoActive = false
+	if phase == PhaseCopy && r.opts.UndoDirName != "" && !r.plan.DestinationRemote {
+		r.undoActive = true
+		dest := strings.TrimRight(r.plan.Destination, "/")
+		if abs, err := filepath.Abs(dest); err == nil {
+			r.undoDest = abs
+		} else {
+			r.undoDest = dest
+		}
+		if !r.undoLogged {
+			r.undoLogged = true
+			r.log(LevelInfo, "撤回数据：本次运行覆盖或删除的文件保存在 "+
+				location.DisplayPath(filepath.Join(r.undoDest, r.opts.UndoDirName))+"。之后可以撤回这次复制。")
+		}
 	}
 	label := fmt.Sprintf("%s %d/%d", phase.Label(), step, steps)
 	if r.opts.VerifiedMove() && phase == PhaseCopy {
@@ -392,7 +455,7 @@ func (r *runner) runProcess(program string, args []string) (int, bool, error) {
 func (r *runner) runProcessFunc(program string, args []string, onLine func(string)) processResult {
 	cmd := exec.Command(program, args...)
 	cmd.Env = append(os.Environ(), "LC_ALL=C.UTF-8", "LANG=C.UTF-8")
-	cmd.Stdin = nil // never let ssh prompt inside the web server
+	cmd.Stdin = nil // never let ssh prompt inside the TUI
 	setProcessGroup(cmd)
 
 	pr, pw, err := os.Pipe()
@@ -456,14 +519,39 @@ func (r *runner) runProcessFunc(program string, args []string, onLine func(strin
 		onLine(line)
 		if !isStatusLine(line) && !strings.HasPrefix(line, "rsync:") && !strings.HasPrefix(line, "rsync error:") && !strings.HasPrefix(line, "rsync warning:") {
 			name := line
-			if idx := strings.Index(line, " -> "); idx > 0 {
-				name = line[:idx]
+			if r.undoActive {
+				// With undo data the copy runs with --itemize-changes: the line
+				// starts with the flags, and the name alone tells the transfer.
+				if _, _, parsed, ok := ParseItemizedLine(line); ok {
+					name = parsed
+				}
+			}
+			if idx := strings.Index(name, " -> "); idx > 0 {
+				name = name[:idx]
 			}
 			if name != lastFile {
 				lastFile = name
 				r.state.CurrentFile = name
 				r.state.Elapsed = time.Since(r.start)
 				r.emitState()
+			}
+		}
+		// rsync prints the itemized line before it installs the entry: the entry
+		// is new when it does not exist in the destination at this moment, and its
+		// old version is in the backup dir otherwise (undo restores it from there).
+		// An entry with all flags '+' is treated as new even if it exists - undo
+		// deletes it and moves the backup copy back, which is the same result
+		// (with --checksum rsync marks an overwritten file like a new one).
+		if r.undoActive {
+			if typ, flags, name, ok := ParseItemizedLine(line); ok {
+				switch typ {
+				case '<', '>', 'c', 'h':
+					if flags == "+++++++++" {
+						r.undoNew = append(r.undoNew, name)
+					} else if _, exists := lstat(filepath.Join(r.undoDest, name)); !exists {
+						r.undoNew = append(r.undoNew, name)
+					}
+				}
 			}
 		}
 	}

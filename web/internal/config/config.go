@@ -13,6 +13,9 @@ type AppConfig struct {
 	Sources            []string `json:"sources,omitempty"`
 	Destination        string   `json:"destination,omitempty"`
 	RecentDestinations []string `json:"recentDestinations,omitempty"`
+	// UndoRecordPath points at the record of a copy run that can still be
+	// undone (kept inside the destination; the data survives a restart).
+	UndoRecordPath string `json:"undoRecordPath,omitempty"`
 }
 
 // ConfigPath returns the per-user configuration file.
@@ -39,6 +42,7 @@ func LoadConfig() AppConfig {
 		Sources            []string        `json:"sources"`
 		Destination        string          `json:"destination"`
 		RecentDestinations []string        `json:"recentDestinations"`
+		UndoRecordPath     string          `json:"undoRecordPath"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return cfg
@@ -66,6 +70,7 @@ func LoadConfig() AppConfig {
 	cfg.Sources = raw.Sources
 	cfg.Destination = raw.Destination
 	cfg.RecentDestinations = raw.RecentDestinations
+	cfg.UndoRecordPath = raw.UndoRecordPath
 	return cfg
 }
 

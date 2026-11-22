@@ -41,6 +41,34 @@ type startResponse struct {
 	Job      jobSnapshot   `json:"job"`
 }
 
+func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Confirm bool `json:"confirm"`
+	}
+	if err := readJSON(w, r, &req, 4<<10); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if s.jobs.Running() {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "传输或撤回正在进行，请先等待或取消"})
+		return
+	}
+	snapshot := s.jobs.Snapshot()
+	if snapshot.Undo == nil {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "没有可撤回的复制（仅本地目标、非移动的复制支持撤回）"})
+		return
+	}
+	if !req.Confirm {
+		writeJSON(w, http.StatusConflict, map[string]string{"confirmRequired": "true"})
+		return
+	}
+	if !s.jobs.Undo() {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "无法开始撤回"})
+		return
+	}
+	writeJSON(w, http.StatusAccepted, s.jobs.Snapshot())
+}
+
 func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
 	var req planRequest
 	if err := readJSON(w, r, &req, 2<<20); err != nil {
@@ -109,6 +137,14 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "已有传输正在进行"})
 		return
 	}
+	// One undo at a time: the data of the previous run is removed now that this
+	// run has really started (rsync would otherwise see it as part of the
+	// destination, especially with --delete).
+	if problems, ok := s.jobs.DiscardUndoRecord(); !ok {
+		for _, problem := range problems {
+			s.jobs.AppendLog(rsync.LevelWarning, problem)
+		}
+	}
 	_ = s.remember(plan.Options, sources, destination)
 	writeJSON(w, http.StatusAccepted, startResponse{
 		Started:  true,
@@ -118,7 +154,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCancel(w http.ResponseWriter, _ *http.Request) {
-	if !s.jobs.Cancel() {
+	if !s.jobs.Cancel() && !s.jobs.CancelUndo() {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "没有正在运行的传输"})
 		return
 	}

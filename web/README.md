@@ -23,6 +23,10 @@
 - 命令预览；复制/校验/删除源文件多个阶段会分别显示
 - 实时进度、速度、ETA、文件计数、日志、取消
 - 会删除文件的操作必须二次确认
+- **撤回复制**（快捷键 `u`）：本地目标的复制以 `--backup --backup-dir`（目标内的
+  隐藏目录）+ `--itemize-changes` 运行，被覆盖/删除的旧文件保存下来；传输结束后
+  一键把目标恢复到复制前的状态——失败、取消的复制同样可撤回，服务重启后仍可撤回。
+  远程目标、试运行、移动不支持；开始新的复制会丢弃上一次的撤回数据
 - 设置 JSON 导入/导出，与 rsync-gui 格式兼容
 - 深色响应式界面，手机浏览器也能操作
 
@@ -184,7 +188,8 @@ rsync-gui/TUI 的安全设计一致。
 | `POST` | `/api/plan` | 校验并预览命令，不创建目标 |
 | `POST` | `/api/start` | 开始任务；破坏性操作需要 `confirm: true` |
 | `GET` | `/api/events` | SSE：`snapshot` / `state` / `log` / `done` |
-| `POST` | `/api/cancel` | 取消当前任务 |
+| `POST` | `/api/cancel` | 取消当前任务或正在进行的撤回 |
+| `POST` | `/api/undo` | 撤回上次复制；需要 `confirm: true` |
 | `GET` | `/api/browse?path=` | 浏览本机目录 |
 | `POST` | `/api/settings/export` | 导出 rsync-gui 兼容设置 |
 | `POST` | `/api/settings/import` | 导入设置文件 |

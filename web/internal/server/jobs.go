@@ -8,12 +8,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lunatickochiya/rsync-gui/web/internal/location"
 	"github.com/lunatickochiya/rsync-gui/web/internal/rsync"
 )
 
 type commandInfo struct {
 	Phase   string `json:"phase"`
 	Command string `json:"command"`
+}
+
+type undoInfo struct {
+	Destination  string            `json:"destination"`
+	Deletions    int               `json:"deletions"`
+	Restorations int               `json:"restorations"`
+	Result       *rsync.UndoResult `json:"result,omitempty"`
 }
 
 type jobSnapshot struct {
@@ -25,6 +33,9 @@ type jobSnapshot struct {
 	Summary    *rsync.Summary  `json:"summary,omitempty"`
 	Commands   []commandInfo   `json:"commands,omitempty"`
 	StartedAt  time.Time       `json:"startedAt"`
+	// Undo is the data of a run that can still be undone (set when the last run
+	// changed a local destination and recorded undo data).
+	Undo *undoInfo `json:"undo,omitempty"`
 }
 
 type sseEvent struct {
@@ -45,10 +56,27 @@ type JobManager struct {
 	startedAt  time.Time
 	cancel     context.CancelFunc
 	subs       map[chan sseEvent]struct{}
+	// Undo data of the last finished run (see rsync.UndoRecord): nil when there
+	// is none. undoCancel stops a running undo; undoDest keeps the destination
+	// for the result panel after the record itself is cleared.
+	undoRecord *rsync.UndoRecord
+	undoResult *rsync.UndoResult
+	undoDest   string
+	undoCancel context.CancelFunc
+	// undoHook is called with the record of a finished run (nil when it cannot
+	// be undone), so that the owner can persist the pointer to it.
+	undoHook func(*rsync.UndoRecord)
 }
 
 func NewJobManager() *JobManager {
 	return &JobManager{subs: make(map[chan sseEvent]struct{})}
+}
+
+// SetUndoHook installs the callback for finished runs (see undoHook).
+func (j *JobManager) SetUndoHook(hook func(*rsync.UndoRecord)) {
+	j.mu.Lock()
+	j.undoHook = hook
+	j.mu.Unlock()
 }
 
 func (j *JobManager) Running() bool {
@@ -64,7 +92,7 @@ func (j *JobManager) Snapshot() jobSnapshot {
 }
 
 func (j *JobManager) snapshotLocked() jobSnapshot {
-	return jobSnapshot{
+	snapshot := jobSnapshot{
 		Running:    j.running,
 		Done:       j.done,
 		Cancelling: j.cancelling,
@@ -74,6 +102,167 @@ func (j *JobManager) snapshotLocked() jobSnapshot {
 		Commands:   append([]commandInfo(nil), j.commands...),
 		StartedAt:  j.startedAt,
 	}
+	if j.undoRecord != nil || j.undoResult != nil {
+		undo := &undoInfo{
+			Destination: j.undoDest,
+			Result:      j.undoResult,
+		}
+		if j.undoRecord != nil {
+			undo.Deletions, undo.Restorations, _ = rsync.UndoCounts(*j.undoRecord)
+		}
+		snapshot.Undo = undo
+	}
+	return snapshot
+}
+
+// SetUndoRecord remembers a run that can be undone (called when its events end).
+func (j *JobManager) SetUndoRecord(rec *rsync.UndoRecord) {
+	j.mu.Lock()
+	j.undoRecord = rec
+	j.undoResult = nil
+	if rec != nil {
+		j.undoDest = rec.Destination
+	}
+	snapshot := j.snapshotLocked()
+	j.mu.Unlock()
+	j.broadcast("snapshot", snapshot)
+}
+
+// ClearUndoRecord forgets the record without deleting its data.
+func (j *JobManager) ClearUndoRecord() {
+	j.mu.Lock()
+	j.undoRecord = nil
+	j.undoResult = nil
+	j.mu.Unlock()
+}
+
+// AppendLog adds a line to the job log and tells the SSE clients.
+func (j *JobManager) AppendLog(level rsync.Level, text string) {
+	line := rsync.LogLine{Time: time.Now(), Level: level, Text: text}
+	j.mu.Lock()
+	j.logs = append(j.logs, line)
+	if len(j.logs) > maxJobLogs {
+		j.logs = j.logs[len(j.logs)-maxJobLogs:]
+	}
+	j.mu.Unlock()
+	j.broadcast("log", line)
+}
+
+// DiscardUndoRecord deletes the undo data of the previous run (before a new one
+// starts, so that rsync does not see it as part of the destination). Returns
+// false when something was left behind.
+func (j *JobManager) DiscardUndoRecord() ([]string, bool) {
+	j.mu.Lock()
+	rec := j.undoRecord
+	j.undoRecord = nil
+	j.undoResult = nil
+	j.undoDest = ""
+	hook := j.undoHook
+	j.mu.Unlock()
+	if hook != nil {
+		hook(nil)
+	}
+	if rec == nil {
+		return nil, true
+	}
+	return rsync.UndoDiscard(*rec)
+}
+
+// UndoCount tells the UI whether there is something to undo.
+func (j *JobManager) UndoAvailable() bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.undoRecord != nil
+}
+
+// Undo restores the destination of the last run. Returns false when a job or an
+// undo is already running, or when there is nothing to undo.
+func (j *JobManager) Undo() bool {
+	j.mu.Lock()
+	if j.running || j.undoRecord == nil {
+		j.mu.Unlock()
+		return false
+	}
+	rec := *j.undoRecord
+	ctx, cancel := context.WithCancel(context.Background())
+	j.running = true
+	j.done = false
+	j.cancelling = false
+	j.summary = nil
+	j.undoResult = nil
+	j.undoCancel = cancel
+	j.startedAt = time.Now()
+	j.state = rsync.State{Phase: "撤回", Indeterminate: true}
+	logLine := rsync.LogLine{Time: time.Now(), Level: rsync.LevelInfo,
+		Text: "--- 撤回：恢复 " + location.DisplayPath(rec.Destination) + " ---"}
+	j.logs = append(j.logs, logLine)
+	snapshot := j.snapshotLocked()
+	j.mu.Unlock()
+	j.broadcast("snapshot", snapshot)
+
+	go func() {
+		result := rsync.UndoExecute(ctx, rec, func(permille int, status string) {
+			j.mu.Lock()
+			j.state.Indeterminate = false
+			j.state.Percent = float64(permille) / 10
+			j.state.CurrentFile = status
+			state := j.state
+			j.mu.Unlock()
+			j.broadcast("state", state)
+		})
+		j.mu.Lock()
+		j.running = false
+		j.done = true
+		j.cancelling = false
+		j.undoCancel = nil
+		j.undoResult = &result
+		j.state.Indeterminate = false
+		j.state.CurrentFile = ""
+		j.state.Percent = 100
+		for _, problem := range result.Problems {
+			j.logs = append(j.logs, rsync.LogLine{Time: time.Now(), Level: rsync.LevelWarning, Text: problem})
+		}
+		level := rsync.LevelSuccess
+		switch {
+		case result.Cancelled:
+			level = rsync.LevelWarning
+		case result.Failed > 0:
+			level = rsync.LevelError
+		}
+		j.logs = append(j.logs, rsync.LogLine{Time: time.Now(), Level: level,
+			Text: fmt.Sprintf("已撤回：删除 %d 项，还原 %d 项。", result.Deleted, result.Restored)})
+		if result.OK() {
+			j.undoRecord = nil // the backup dir is empty and removed now
+		}
+		record := j.undoRecord
+		hook := j.undoHook
+		snapshot := j.snapshotLocked()
+		j.mu.Unlock()
+		j.broadcast("snapshot", snapshot)
+		if hook != nil {
+			hook(record)
+		}
+	}()
+	return true
+}
+
+// CancelUndo stops a running undo.
+func (j *JobManager) CancelUndo() bool {
+	j.mu.Lock()
+	cancel := j.undoCancel
+	cancelling := cancel != nil && !j.cancelling
+	if cancelling {
+		j.cancelling = true
+	}
+	snapshot := j.snapshotLocked()
+	j.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+	if cancelling {
+		j.broadcast("snapshot", snapshot)
+	}
+	return cancelling
 }
 
 // Start takes ownership of plan and returns false when a job is already running.
@@ -118,6 +307,12 @@ func (j *JobManager) consume(events <-chan rsync.Event) {
 			}
 			j.mu.Unlock()
 			j.broadcast("log", ev.Log)
+		case rsync.EventUndoAvailable:
+			j.mu.Lock()
+			j.undoRecord = ev.UndoRecord
+			j.undoDest = ev.UndoRecord.Destination
+			j.mu.Unlock()
+			// The UI learns about it with the "done" event's snapshot.
 		case rsync.EventDone:
 			j.mu.Lock()
 			j.running = false
@@ -131,8 +326,16 @@ func (j *JobManager) consume(events <-chan rsync.Event) {
 				j.summary = &rsync.Summary{Aborted: true, Err: "传输进程意外结束"}
 			}
 			summary := j.summary
+			snapshot := j.snapshotLocked()
+			record := j.undoRecord
+			hook := j.undoHook
 			j.mu.Unlock()
 			j.broadcast("done", summary)
+			j.broadcast("snapshot", snapshot)
+			// Tell the owner whether this run can be undone (nil: it cannot).
+			if hook != nil {
+				hook(record)
+			}
 			return
 		}
 	}

@@ -52,6 +52,7 @@ const OPTION_GROUPS = [
     title: '校验与清理', open: true, rows: [
       { key: 'verifyAfter', type: 'bool', label: '复制后校验', flag: '--checksum 比较' },
       { key: 'checksum', type: 'bool', label: '按校验和比较', flag: '-c' },
+      { key: 'allowUndo', type: 'bool', label: '允许复制后撤回', flag: '--backup 保存旧文件' },
       { key: 'removeSourceFiles', type: 'bool', label: '删除源文件（移动）', flag: '--remove-source-files' },
       { key: 'removeSourceDirs', type: 'bool', label: '删除空的源目录', flag: '移动后', depends: 'move' }
     ]
@@ -143,6 +144,10 @@ function init() {
     cancelButton: $('#cancel-button'),
     backButton: $('#back-button'),
     rerunButton: $('#rerun-button'),
+    undoButton: $('#undo-button'),
+    undoBanner: $('#undo-banner'),
+    undoBannerText: $('#undo-banner-text'),
+    undoBannerButton: $('#undo-banner-button'),
     logList: $('#log-list'),
     logCount: $('#log-count'),
     followLog: $('#follow-log'),
@@ -180,6 +185,8 @@ function bindEvents() {
   els.cancelButton.addEventListener('click', cancelJob);
   els.backButton.addEventListener('click', backToSetup);
   els.rerunButton.addEventListener('click', () => startJob(false));
+  els.undoButton.addEventListener('click', confirmUndo);
+  els.undoBannerButton.addEventListener('click', confirmUndo);
   els.followLog.addEventListener('change', () => {
     state.follow = els.followLog.checked;
     if (state.follow) scrollLogs();
@@ -205,6 +212,9 @@ function bindEvents() {
       if (event.key === 'r' || event.key === 'R') {
         event.preventDefault();
         startJob(false);
+      } else if (event.key === 'u') {
+        event.preventDefault();
+        if (undoAvailable()) confirmUndo();
       } else if (event.key === 'a') {
         event.preventDefault();
         openAddSource();
@@ -217,6 +227,12 @@ function bindEvents() {
       } else if (event.key === 'p') {
         event.preventDefault();
         openPresetPicker();
+      }
+    }
+    if (!els.runView.classList.contains('hidden')) {
+      if (event.key === 'u') {
+        event.preventDefault();
+        if (undoAvailable()) confirmUndo();
       }
     }
     if (event.key === '?') {
@@ -254,8 +270,11 @@ async function loadBootstrap() {
     if (data.job && (data.job.running || data.job.done)) {
       applyJob(data.job, true);
     } else {
+      // No run to show, but the last run may still be undoable.
+      state.job = data.job || null;
       showSetup();
       refreshPlan();
+      updateUndoBanner();
     }
     connectEvents();
   } catch (err) {
@@ -750,6 +769,7 @@ function applyJob(job, show) {
     if (job.done) showSummary(job.summary);
   }
   updateMeta();
+  updateUndoBanner();
 }
 
 function connectEvents() {
@@ -817,18 +837,24 @@ function renderRun() {
   const st = job.state || {};
   const summary = job.summary || state.summary;
   const done = !!job.done;
+  const undo = job.undo || null;
+  const undoRes = undo && undo.result ? undo.result : null;
   const cancelled = summary && summary.Cancelled;
   const failed = summary && !summarySuccess(summary) && !cancelled;
   let phase = st.Phase || (done ? '完成' : '复制');
   let title = '正在' + (phase === '复制' || phase === '' ? '传输' : phase);
-  if (done) {
+  if (done && undoRes) {
+    title = undoRes.Cancelled ? '撤回已取消' : (undoRes.Failed > 0 ? '撤回未完成' : '已撤回');
+    phase = title;
+  } else if (done) {
     title = cancelled ? '已取消' : (failed ? '传输未完全成功' : '传输完成');
     phase = cancelled ? '已取消' : (failed ? '未完成' : '完成');
   }
   els.runPhase.textContent = phase;
   els.runTitle.textContent = title;
 
-  const percent = done && summarySuccess(summary) ? 100 : Number(st.Percent || 0);
+  const percent = done && (undoRes ? undoRes.Failed === 0 && !undoRes.Cancelled : summarySuccess(summary))
+    ? 100 : Number(st.Percent || 0);
   els.runPercent.textContent = st.Indeterminate ? '…' : Math.round(percent) + '%';
   els.progressFill.classList.toggle('indeterminate', !done && !!st.Indeterminate);
   els.progressFill.style.width = Math.max(0, Math.min(100, percent)) + '%';
@@ -849,9 +875,66 @@ function renderRun() {
   els.cancelButton.disabled = !!job.cancelling;
   els.cancelButton.textContent = job.cancelling ? '正在取消…' : '取消传输';
   els.backButton.classList.toggle('hidden', !done);
-  els.rerunButton.classList.toggle('hidden', !done);
+  els.rerunButton.classList.toggle('hidden', !done || !!undoRes);
+  els.undoButton.classList.toggle('hidden', !done || !undo || !undoAvailable());
   updateClock();
   if (done) showSummary(summary);
+}
+
+// undoAvailable reports whether the last finished run can be undone.
+function undoAvailable() {
+  return !!(state.job && state.job.undo && !state.job.undo.result);
+}
+
+// updateUndoBanner shows (or hides) the note about the last run on the setup page.
+function updateUndoBanner() {
+  const available = undoAvailable() && !state.running;
+  els.undoBanner.classList.toggle('hidden', !available
+    || !els.setupView || els.setupView.classList.contains('hidden'));
+  if (!available || !state.job.undo) return;
+  const undo = state.job.undo;
+  els.undoBannerText.textContent = undo.destination + '（删除新建 '
+    + undo.deletions + ' 项，还原旧文件 ' + undo.restorations + ' 项）';
+}
+
+// confirmUndo asks, then restores the destination of the last run.
+async function confirmUndo() {
+  const undo = state.job && state.job.undo;
+  if (!undo || state.running) return;
+
+  const body = el('div');
+  body.append(el('p', 'hint',
+    '把目标恢复到这次复制之前的状态。源不会被改动；此操作无法重做。'));
+  const list = el('ul', 'confirm-list');
+  list.append(el('li', '', '删除这次新建的条目：' + undo.deletions + ' 项'));
+  list.append(el('li', '', '还原被覆盖或删除的旧文件：' + undo.restorations + ' 项'));
+  list.append(el('li', '', '目标：' + undo.destination));
+  body.append(list);
+  const { footer } = openModal({
+    title: '撤回这次复制？',
+    subtitle: '目标恢复到复制前的状态。',
+    body,
+    footer: (bar) => {
+      const cancel = el('button', 'btn ghost', '返回检查');
+      cancel.type = 'button';
+      cancel.addEventListener('click', closeModal);
+      const confirmButton = el('button', 'btn danger', '撤回');
+      confirmButton.type = 'button';
+      confirmButton.addEventListener('click', async () => {
+        closeModal();
+        try {
+          const data = await api('/api/undo', { method: 'POST', body: { confirm: true } });
+          applyJob(data, true);
+          showRunView();
+        } catch (err) {
+          toast(err.message, true);
+        }
+      });
+      bar.append(cancel, confirmButton);
+    }
+  });
+  const first = footer.querySelector('button');
+  if (first) first.focus();
 }
 
 function updateClock() {
@@ -873,6 +956,11 @@ function summarySuccess(summary) {
 }
 
 function showSummary(summary) {
+  const undoRes = state.job && state.job.undo ? state.job.undo.result : null;
+  if (undoRes) {
+    showUndoSummary(undoRes);
+    return;
+  }
   if (!summary) {
     els.summary.classList.add('hidden');
     return;
@@ -899,6 +987,44 @@ function showSummary(summary) {
     grid.append(cell);
   }
   els.summary.append(title, text, grid);
+  els.summary.classList.remove('hidden');
+}
+
+// showUndoSummary is the result panel after an undo.
+function showUndoSummary(result) {
+  const success = !result.Cancelled && (result.Failed || 0) === 0;
+  els.summary.className = 'summary' + (success ? '' : ' fail');
+  els.summary.replaceChildren();
+  const title = el('h3', '', result.Cancelled ? '已取消撤回'
+    : (success ? '✓ 已撤回' : '撤回未完成'));
+  let text;
+  if (result.leftInBackupDir) {
+    text = '无法还原的旧版本仍在备份目录中，再次“撤回复制”会从这里继续。';
+  } else if (result.Cancelled) {
+    text = '目标处于复制前后的中间状态，再次“撤回复制”会从这里继续。';
+  } else if (success) {
+    text = '目标已恢复到复制前的状态。';
+  } else {
+    text = '部分内容未能撤回，请查看上面的日志。';
+  }
+  els.summary.append(
+    title,
+    el('p', '', text),
+    (() => {
+      const grid = el('div', 'summary-grid');
+      const stats = [
+        ['删除新建', result.Deleted || 0],
+        ['还原旧文件', result.Restored || 0],
+        ['失败', result.Failed || 0]
+      ];
+      for (const [label, value] of stats) {
+        const cell = el('div');
+        cell.append(el('span', '', String(value)), el('small', '', label));
+        grid.append(cell);
+      }
+      return grid;
+    })()
+  );
   els.summary.classList.remove('hidden');
 }
 
@@ -1282,6 +1408,12 @@ function openHelp() {
       <h4>会删除文件的操作</h4>
       <p><code>--delete</code>、<code>--remove-source-files</code> 会在开始前弹出第二次确认。</p>
       <p>“移动并校验”只有校验通过后才删除源文件。</p>
+    </div>
+    <div>
+      <h4>撤回复制</h4>
+      <p>本地目标的复制带 <code>--backup --backup-dir</code>（目标内的隐藏目录）+ <code>--itemize-changes</code> 运行，被覆盖或删除的旧文件会保存下来。</p>
+      <p>传输结束后的 <b>撤回复制</b>（快捷键 <code>u</code>）把目标恢复到复制前的状态 - 失败、取消的复制同样可以撤回，服务重启后也仍然可以。</p>
+      <p>开始新的复制会丢弃上一次的撤回数据；远程目标、试运行、移动不支持撤回。</p>
     </div>
     <div>
       <h4>限制</h4>

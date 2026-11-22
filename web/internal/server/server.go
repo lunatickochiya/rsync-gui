@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/lunatickochiya/rsync-gui/web/internal/config"
+	"github.com/lunatickochiya/rsync-gui/web/internal/rsync"
 )
 
 //go:embed assets
@@ -68,7 +69,44 @@ func New(cfg Config) (*Server, error) {
 		jobs:         NewJobManager(),
 		cfg:          appCfg,
 	}
+	// A copy run of a previous session that can still be undone: the record is
+	// inside the destination, only the pointer to it is remembered here.
+	if appCfg.UndoRecordPath != "" {
+		if rec, ok := rsync.UndoLoad(rsync.UnescapeForRecord(appCfg.UndoRecordPath)); ok {
+			deletions, _, backupExists := rsync.UndoCounts(rec)
+			if backupExists || deletions > 0 {
+				s.jobs.SetUndoRecord(&rec)
+			} else {
+				_, _ = rsync.UndoDiscard(rec) // nothing usable left
+				s.setUndoPointer("")
+			}
+		} else {
+			s.setUndoPointer("")
+		}
+	}
+	// Keep the pointer in the configuration up to date when runs end.
+	s.jobs.SetUndoHook(func(rec *rsync.UndoRecord) { s.setUndoPointerForRecord(rec) })
 	return s, nil
+}
+
+// setUndoPointerForRecord stores (or clears, when rec is nil) the pointer to the
+// record of a run that can be undone.
+func (s *Server) setUndoPointerForRecord(rec *rsync.UndoRecord) {
+	if rec != nil {
+		// The path may contain bytes that are not valid UTF-8; the config is
+		// JSON, so it is stored in the escaped form (see rsync.EscapeForRecord).
+		s.setUndoPointer(rsync.EscapeForRecord(rec.RecordPath()))
+		return
+	}
+	s.setUndoPointer("")
+}
+
+func (s *Server) setUndoPointer(path string) {
+	s.mu.Lock()
+	s.cfg.UndoRecordPath = path
+	cfg := s.cfg
+	s.mu.Unlock()
+	_ = cfg.Save()
 }
 
 // RsyncVersion returns the detected rsync version for the startup banner.
@@ -89,6 +127,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/plan", s.auth(s.handlePlan))
 	mux.HandleFunc("POST /api/start", s.auth(s.handleStart))
 	mux.HandleFunc("POST /api/cancel", s.auth(s.handleCancel))
+	mux.HandleFunc("POST /api/undo", s.auth(s.handleUndo))
 	mux.HandleFunc("GET /api/events", s.auth(s.handleEvents))
 	mux.HandleFunc("GET /api/browse", s.auth(s.handleBrowse))
 	mux.HandleFunc("POST /api/settings/export", s.auth(s.handleSettingsExport))
@@ -250,7 +289,7 @@ func (s *Server) handleBootstrap(w http.ResponseWriter, _ *http.Request) {
 		SettingsVersion:    config.SettingsVersion,
 		Features: map[string]bool{
 			"verify": true, "move": true, "browse": true,
-			"settings": true, "git": true,
+			"settings": true, "git": true, "undo": true,
 		},
 		Limits: map[string]int64{"bodyBytes": 2 << 20, "logs": maxJobLogs},
 	})

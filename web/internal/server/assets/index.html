@@ -97,6 +97,14 @@
           <div id="warnings" class="warnings"></div>
         </div>
 
+        <div id="undo-banner" class="undo-banner hidden">
+          <div>
+            <strong>上次的复制可以撤回</strong>
+            <span id="undo-banner-text" class="muted small"></span>
+          </div>
+          <button class="btn ghost" id="undo-banner-button" type="button">撤回复制…</button>
+        </div>
+
         <div class="actionbar">
           <div id="plan-status" class="plan-status">准备就绪</div>
           <button id="start-button" class="btn primary big" type="button">开始传输 <kbd>r</kbd></button>
@@ -124,6 +132,7 @@
           <button id="cancel-button" class="btn danger" type="button">取消传输</button>
           <button id="back-button" class="btn ghost hidden" type="button">返回设置</button>
           <button id="rerun-button" class="btn hidden" type="button">再次运行</button>
+          <button id="undo-button" class="btn hidden" type="button">撤回复制…</button>
         </div>
         <section class="card log-card">
           <div class="card-head">

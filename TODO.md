@@ -49,6 +49,12 @@
       is matched against the directory listing (each U+FFFD stands for one or more bytes) - one match: the
       exact name, several: only they are listed in the built-in dialog to choose from;
       `FileListing::replacedBytesMatches` with tests
+- [x] Undo of the last copy (all three front-ends): the copy runs with `--backup --backup-dir` (a hidden
+      directory inside the destination, protected from `--delete` with a filter rule) and
+      `--itemize-changes`; overwritten or deleted files are kept there, created entries are recorded,
+      so *Undo copy* restores the destination to its state before the run - also after a cancelled or
+      failed copy, and across a restart (the record is kept inside the destination). Not for remote
+      destinations, dry runs and moves; `CopyUndo` / `internal/rsync/undo.go` with tests
 
 ## To do
 
