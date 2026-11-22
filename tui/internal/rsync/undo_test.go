@@ -77,11 +77,17 @@ func TestUndoEngine(t *testing.T) {
 	}
 	mkdir(filepath.Join(dest, "d"))
 	mkdir(filepath.Join(backup, "gone", "inner"))
+	// A merge case: the directory still exists in the destination, so the old
+	// files inside are moved back one by one (not the whole tree with one rename).
+	mkdir(filepath.Join(backup, "merged"))
+	mkdir(filepath.Join(dest, "merged"))
 	writeFile(t, filepath.Join(dest, "d", "leftover.tmp"), "junk") // not in the record: a partial file
 	writeFile(t, filepath.Join(backup, "gone", "inner", "file"), "restored")
 	writeFile(t, filepath.Join(backup, "replaced"), "old version")
 	writeFile(t, filepath.Join(dest, "replaced"), "new version")
 	writeFile(t, filepath.Join(backup, "blocked"), "kept simple")
+	writeFile(t, filepath.Join(backup, "merged", "file"), "old version")
+	writeFile(t, filepath.Join(dest, "merged", "file"), "new version")
 
 	rec := UndoRecord{
 		Destination: dest,
@@ -89,14 +95,14 @@ func TestUndoEngine(t *testing.T) {
 		NewEntries:  []string{"d", "d/x", "../escape", "/absolute", "missing"},
 	}
 	deletions, restorations, backupExists := UndoCounts(rec)
-	if !backupExists || deletions != 1 || restorations != 5 {
+	if !backupExists || deletions != 1 || restorations != 7 {
 		t.Fatalf("counts = %d %d %v", deletions, restorations, backupExists)
 	}
 
 	result := UndoExecute(context.Background(), rec, nil)
 	// The unsafe names are skipped, everything else is undone - also the file
 	// that the record does not know about, because it is inside a directory that it does.
-	if result.Failed != 2 || result.Deleted != 2 || result.Restored != 5 {
+	if result.Failed != 2 || result.Deleted != 2 || result.Restored != 7 {
 		t.Fatalf("result = %+v", result)
 	}
 	if _, err := os.Lstat(filepath.Join(dest, "d")); !os.IsNotExist(err) {
@@ -107,6 +113,12 @@ func TestUndoEngine(t *testing.T) {
 	}
 	if got := readFile(t, filepath.Join(dest, "replaced")); got != "old version" {
 		t.Fatalf("replaced = %q", got)
+	}
+	if got := readFile(t, filepath.Join(dest, "merged", "file")); got != "old version" {
+		t.Fatalf("merged/file = %q", got)
+	}
+	if _, err := os.Lstat(filepath.Join(backup, "merged")); !os.IsNotExist(err) {
+		t.Fatal("backup/merged still exists")
 	}
 	if _, err := os.Lstat(backup); !os.IsNotExist(err) {
 		t.Fatal("backup dir still exists")

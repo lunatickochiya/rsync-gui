@@ -407,7 +407,16 @@ func UndoExecute(ctx context.Context, rec UndoRecord, progress func(permille int
 				if root {
 					_ = os.Remove(filepath.Join(from, UndoRecordFileName))
 				}
-				return os.Remove(from) == nil
+				// The directory itself is emptied and removed: count it like
+				// UndoCounts does (the root backup dir is not an entry of it).
+				if os.Remove(from) == nil {
+					if !root {
+						result.Restored++
+						done++
+					}
+					return true
+				}
+				return false
 			}
 			if err := os.Rename(from, to); err != nil {
 				result.Failed++
