@@ -132,8 +132,10 @@ func (m *Model) inputModal(width int) (string, string) {
 	}
 	hintText := "enter 保存 · esc 取消"
 	switch m.modal.field {
-	case "source", "source-edit":
+	case "source":
 		hintText = "tab 补全 · enter 添加 · esc 取消"
+	case "source-edit":
+		hintText = "tab 补全 · enter 保存 · esc 取消"
 	case "dest":
 		hintText = "tab 补全 · ctrl+n 最近目标 · enter 保存 · esc 取消"
 	case "import-settings", "export-settings":
